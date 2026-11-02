@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>위두 메이커스 — WeDo 2.0 워드블럭 + Python</title>
+<title>WeDo Makers</title>
 <link rel="icon" type="image/png" href="__FAVICON__">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f4f6fa; --panel:#ffffff; --ink:#1d2433; --ink2:#5b6476; --line:#e2e7ef;
@@ -20,7 +20,12 @@ button{font:inherit;cursor:pointer}
 #app{display:flex;flex-direction:column;height:100vh}
 
 /* ---------- 헤더 ---------- */
-header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:nowrap;min-width:0}
+header > *{flex-shrink:0}
+#projName{flex:1 1 120px !important;min-width:80px;max-width:300px}
+a.btn{text-decoration:none}
+@media (max-width:1500px){header .btn.ghost span{display:none}header .btn.ghost{padding:7px 9px}}
+@media (max-width:1180px){.brand small{display:none}#btnRun span,#btnStop span{display:none}}
 .brand{display:flex;align-items:center;gap:9px;margin-right:6px}
 .brand-logo{width:36px;height:36px;display:block}
 .brand b{font-weight:800;font-size:16px;letter-spacing:-.3px}
@@ -53,11 +58,38 @@ main{flex:1;display:flex;min-height:0}
 .zoom button:hover{color:var(--ink)}
 #splitter{width:6px;cursor:col-resize;background:transparent;border-left:1px solid var(--line);flex:none}
 #splitter:hover,#splitter.drag{background:#dbe4f0}
+/* 위아래 크기 조절 손잡이 (Python | 허브·콘솔) */
+#vsplit{flex:none;height:10px;cursor:row-resize;background:#eef2f7;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;place-items:center;touch-action:none}
+#vsplit i{display:block;width:44px;height:4px;border-radius:2px;background:#b9c3d1}
+#vsplit:hover,#vsplit.drag{background:#dbe4f0}#vsplit:hover i,#vsplit.drag i{background:var(--brand)}
+body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{pointer-events:none}
+/* 변수 모니터 */
+.varmon{position:absolute;top:12px;right:16px;z-index:6;min-width:170px;max-width:280px;background:#fff;border:1px solid #f1c9a8;border-radius:12px;box-shadow:0 6px 18px rgba(20,30,50,.12);overflow:hidden}
+.varmon[hidden]{display:none}
+.vm-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 12px;background:#c8510d;color:#fff;font-weight:700;font-size:13px}
+.vm-head button{border:0;background:rgba(255,255,255,.2);color:#fff;width:24px;height:24px;border-radius:6px;font-size:16px;line-height:1}
+.varmon.folded #vmList{display:none}
+#vmList{padding:6px 8px;max-height:40vh;overflow:auto}
+.vm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 4px;border-bottom:1px dashed #f3e2d4}
+.vm-row:last-child{border-bottom:0}
+.vm-name{font-weight:700;color:#7a3a00;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vm-val{font:700 18px/1.2 "JetBrains Mono",ui-monospace,monospace;color:#1d2433;background:#fff2e8;border-radius:7px;padding:2px 9px;min-width:44px;text-align:right}
+/* 언어 선택 */
+#langSel{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font:inherit;font-weight:600;color:var(--ink)}
+.linkbtn{border:0;background:none;color:var(--brand);text-decoration:underline;margin-left:8px;font:inherit;font-size:12px;padding:0}
+.mailline{font-size:18px;margin:6px 0 4px}
+/* 블록 글씨 가독성: 밝은 블록(이벤트·제어)은 진한 글씨 */
+.wm-dark > g:not(.blocklyDraggable) > text.blocklyText{fill:#2b2100 !important}
+.wm-dark > g.blocklyEditableText > rect.blocklyDropdownRect{fill:rgba(255,255,255,.6) !important;stroke:rgba(0,0,0,.18) !important}
+.wm-dark > g.blocklyEditableText > image{filter:brightness(0) opacity(.7)}
+.blocklyText{letter-spacing:-.1px}
 aside{width:var(--side-w);flex:none;display:flex;flex-direction:column;background:var(--panel);min-width:300px;max-width:70vw}
 
 /* Python 코드 */
-.py{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--code-bg)}
-.py-head{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;color:#c9d3e3;border-bottom:1px solid #1e2a3d}
+.py{flex:none;height:var(--py-h,48%);display:flex;flex-direction:column;min-height:90px;background:var(--code-bg)}
+.py-head{display:flex;align-items:center;gap:6px;padding:8px 10px 8px 14px;color:#c9d3e3;border-bottom:1px solid #1e2a3d;overflow:hidden}
+.py-head .title{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
+.py-head .btn,.py-head .badge{flex-shrink:0;white-space:nowrap}
 .py-head .title{display:flex;align-items:center;gap:8px;font-weight:700;color:#fff}
 .py-logo{width:18px;height:18px}
 .py-head .badge{font-size:11px;padding:2px 7px;border-radius:99px;background:#1d2a40;color:#8fb2e8;font-weight:600}
@@ -70,7 +102,7 @@ aside{width:var(--side-w);flex:none;display:flex;flex-direction:column;backgroun
 .tk-f{color:#71c6ff}.tk-d{color:#ffd166}.tk-b{color:#c79bff}.tk-cn{color:#7fe0d0}
 
 /* 하단 탭 */
-.bottom{flex:1;display:flex;flex-direction:column;min-height:240px;border-top:1px solid var(--line)}
+.bottom{flex:1;display:flex;flex-direction:column;min-height:120px}
 .tabs{display:flex;gap:2px;padding:6px 8px 0;border-bottom:1px solid var(--line);background:#fafbfd}
 .tab{border:0;background:transparent;padding:8px 12px;border-radius:8px 8px 0 0;color:var(--ink2);font-weight:600;position:relative}
 .tab.on{color:var(--ink);background:#fff;box-shadow:0 -1px 0 var(--line),1px 0 0 var(--line),-1px 0 0 var(--line)}
@@ -137,7 +169,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 /* Blockly 미세 조정 */
 .blocklyToolboxDiv{border-right:1px solid var(--line)}
 .blocklyTreeRow{margin:2px 0 !important}
-.blocklyTreeLabel{font-family:"Noto Sans KR",sans-serif !important;font-weight:600}
+.blocklyTreeLabel{font-family:"Noto Sans KR","Noto Sans JP","Noto Sans SC",sans-serif !important;font-weight:700;font-size:14px}
 
 @media (max-width:860px){
   main{flex-direction:column}
@@ -151,86 +183,89 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 <body>
 <div id="app">
   <header>
-    <div class="brand"><img class="brand-logo" src="__LOGO__" alt="위두 메이커스 로고"><div><b>위두 메이커스</b><small>WeDo 2.0 워드블럭 + Python</small></div></div>
-    <input id="projName" value="내 WeDo 프로젝트" aria-label="프로젝트 이름">
-    <button class="btn ghost" id="btnNew" title="새 프로젝트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg>새로</button>
-    <button class="btn ghost" id="btnOpen" title="프로젝트 열기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>열기</button>
-    <button class="btn ghost" id="btnSave" title="프로젝트 저장 (.wedo.json)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>저장</button>
+    <div class="brand"><img class="brand-logo" src="__LOGO__" alt="WeDo Makers"><div><b data-i18n="app_name">위두 메이커스</b><small data-i18n="app_sub">WeDo 2.0 워드블럭 + Python</small></div></div>
+    <input id="projName" value="" aria-label="project name">
+    <button class="btn ghost" id="btnNew" data-i18n-title="btn_new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span data-i18n="btn_new">새로</span></button>
+    <button class="btn ghost" id="btnOpen" data-i18n-title="btn_open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span data-i18n="btn_open">열기</span></button>
+    <button class="btn ghost" id="btnSave" data-i18n-title="btn_save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span data-i18n="btn_save">저장</span></button>
     <input type="file" id="fileIn" accept=".json,.wedo,.wedo.json" hidden>
     <div class="spacer"></div>
+    <select id="langSel" data-i18n-title="lang"></select>
     <button class="btn" id="btnConnect"><span class="dot"></span><span id="connLabel">허브 연결</span></button>
     <div class="sep"></div>
-    <button class="btn" id="btnRun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>실행</button>
-    <button class="btn" id="btnStop" disabled><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>정지</button>
-    <button class="btn ghost" id="btnHelp" title="도움말">?</button>
+    <button class="btn" id="btnRun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span data-i18n="btn_run">실행</span></button>
+    <button class="btn" id="btnStop" disabled><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg><span data-i18n="btn_stop">정지</span></button>
+    <button class="btn ghost" id="btnReport" data-i18n-title="report_btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21V4h11l-1 4h6v9h-9l1-4H4"/></svg></button>
+    <button class="btn ghost" id="btnHelp" data-i18n-title="t_help">?</button>
   </header>
 
   <main>
     <div id="blockWrap">
       <div id="blockArea"></div>
+      <div class="varmon" id="varMon" hidden>
+        <div class="vm-head"><span data-i18n="var_mon">변수 모니터</span><button id="vmFold" aria-label="fold">−</button></div>
+        <div id="vmList"></div>
+      </div>
       <div class="zoom">
-        <button id="zIn" title="확대">+</button>
-        <button id="zOut" title="축소">−</button>
-        <button id="zFit" title="화면에 맞추기" style="font-size:14px">⤢</button>
+        <button id="zIn" data-i18n-title="t_zin">+</button>
+        <button id="zOut" data-i18n-title="t_zout">−</button>
+        <button id="zFit" data-i18n-title="t_zfit" style="font-size:14px">⤢</button>
       </div>
     </div>
-    <div id="splitter" title="드래그해서 너비 조절"></div>
+    <div id="splitter"></div>
     <aside>
       <section class="py">
         <div class="py-head">
           <div class="title">
             <svg class="py-logo" viewBox="0 0 24 24"><path fill="#4b8bbe" d="M11.9 2C6.8 2 7.1 4.2 7.1 4.2v2.3h4.9v.7H5.2S2 6.8 2 12s2.8 5 2.8 5h1.7v-2.4s-.1-2.8 2.8-2.8h4.8s2.7 0 2.7-2.6V4.8S17.2 2 11.9 2zM9.2 3.6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8z"/><path fill="#ffd43b" d="M12.1 22c5.1 0 4.8-2.2 4.8-2.2v-2.3H12v-.7h6.8S22 17.2 22 12s-2.8-5-2.8-5h-1.7v2.4s.1 2.8-2.8 2.8H9.9s-2.7 0-2.7 2.6v4.4S6.8 22 12.1 22zm2.7-1.6a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8z"/></svg>
-            Python 코드 <span class="badge">자동 생성</span>
+            <span data-i18n="py_title">Python 코드</span> <span class="badge" data-i18n="py_badge">자동 생성</span>
           </div>
           <div class="spacer"></div>
-          <button class="btn" id="btnCopyPy">복사</button>
-          <button class="btn" id="btnSavePy">.py 저장</button>
-          <button class="btn" id="btnPyHelp">PC에서 실행</button>
+          <button class="btn" id="btnCopyPy" data-i18n="btn_copy">복사</button>
+          <button class="btn" id="btnSavePy" data-i18n="btn_save_py">.py 저장</button>
+          <button class="btn" id="btnPyHelp" data-i18n="btn_py_help">PC에서 실행</button>
         </div>
         <pre id="pyCode"></pre>
       </section>
+      <div id="vsplit" data-i18n-title="t_resize"><i></i></div>
       <section class="bottom">
         <div class="tabs">
-          <button class="tab on" data-tab="hubPane">허브</button>
-          <button class="tab" data-tab="consolePane">콘솔<span class="cnt" id="errCnt" hidden>0</span></button>
+          <button class="tab on" data-tab="hubPane"><span data-i18n="tab_hub">허브</span></button>
+          <button class="tab" data-tab="consolePane"><span data-i18n="tab_console">콘솔</span><span class="cnt" id="errCnt" hidden>0</span></button>
         </div>
         <div class="pane on" id="hubPane">
-          <div class="hub-status"><span id="modeChip" class="chip sim">가상 허브</span><span id="hubName">허브가 연결되지 않았습니다 — 가상 허브로 실행됩니다.</span><span class="spacer"></span><span id="battery"></span></div>
+          <div class="hub-status"><span id="modeChip" class="chip sim"></span><span id="hubName"></span><span class="spacer"></span><span id="battery"></span></div>
           <div class="grid2">
             <div class="card" id="port1"></div>
             <div class="card" id="port2"></div>
             <div class="card">
-              <h4>허브 불빛 <span id="ledTxt" class="muted">꺼짐</span></h4>
-              <div class="motor-vis"><div class="led" id="ledVis"></div><div class="muted" id="toneTxt">소리 없음</div></div>
+              <h4><span data-i18n="hub_light">허브 불빛</span> <span id="ledTxt" class="muted"></span></h4>
+              <div class="motor-vis"><div class="led" id="ledVis"></div><div class="muted" id="toneTxt"></div></div>
             </div>
             <div class="card">
-              <h4>허브 버튼 <span id="btnTxt" class="muted">안 눌림</span></h4>
-              <button id="simBtn">누르고 있기</button>
+              <h4><span data-i18n="hub_button">허브 버튼</span> <span id="btnTxt" class="muted"></span></h4>
+              <button id="simBtn"></button>
             </div>
             <div class="card">
-              <h4>거리 센서 <span class="val" id="distTxt">50</span></h4>
+              <h4><span data-i18n="dev_dist">거리 센서</span> <span class="val" id="distTxt">50</span></h4>
               <input type="range" id="distSlider" min="0" max="100" value="50">
-              <div class="muted" id="distNote">가상값 — 슬라이더로 바꿔 보세요</div>
+              <div class="muted" id="distNote"></div>
             </div>
             <div class="card">
-              <h4>기울기 센서 <span class="val" id="tiltTxt">수평</span></h4>
+              <h4><span data-i18n="dev_tilt">기울기 센서</span> <span class="val" id="tiltTxt"></span></h4>
               <div class="tiltpad" id="tiltPad">
                 <button class="u" data-d="UP">▲</button><button class="lft" data-d="LEFT">◀</button>
                 <button class="c on" data-d="NONE">●</button><button class="r" data-d="RIGHT">▶</button><button class="d" data-d="DOWN">▼</button>
               </div>
             </div>
-            <div class="card">
-              <h4>PC 키보드 <span class="muted" id="keyTxt">없음</span></h4>
-              <div class="keyvis" id="keyVis">키를 눌러 보세요</div>
-            </div>
-            <div class="card">
-              <h4>변수</h4>
-              <div id="varList"></div>
+            <div class="card" style="grid-column:1 / -1">
+              <h4><span data-i18n="keyboard">PC 키보드</span> <span class="muted" id="keyTxt"></span></h4>
+              <div class="keyvis" id="keyVis" data-i18n="key_try">키를 눌러 보세요</div>
             </div>
           </div>
         </div>
         <div class="pane" id="consolePane">
-          <div class="console-tools"><button class="btn ghost" id="btnClear" style="font-size:12px;padding:4px 8px">지우기</button></div>
+          <div class="console-tools"><button class="btn ghost" id="btnClear" style="font-size:12px;padding:4px 8px" data-i18n="btn_clear">지우기</button></div>
           <div id="logs"></div>
         </div>
       </section>
@@ -242,7 +277,9 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 <div id="toast"></div>
 
 <script>/*__BLOCKLY__*/</script>
+<script>/*__MSGS__*/</script>
 <script>window.WEDO2_PY = /*__WEDO2PY__*/;</script>
+<script>/*__I18N__*/</script>
 <script>/*__BLOCKS__*/</script>
 <script>/*__HUB__*/</script>
 <script>/*__APP__*/</script>

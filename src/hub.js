@@ -197,7 +197,8 @@
       this.keys = new Set(); this.lastKey = '';
     }
     check() { if (!this.running) throw new StopSignal(); }
-    async tick() { this.check(); await sleep(0); this.check(); }
+    // 반복 한 바퀴마다 한 프레임(1/30초) 쉬기 — Scratch 와 같은 속도로 "점점 빨라지기" 같은 동작이 보이도록
+    async tick() { this.check(); await sleep(1000 / 30); this.check(); }
 
     ports(p) { p = num(p); return p === 0 ? [1, 2] : [clamp(p, 1, 2)]; }
     _sendMotor(port) {
@@ -287,7 +288,7 @@
       const t = ++this.tid;
       const p = (async () => {
         try { await fn(t); } catch (e) {
-          if (!(e instanceof StopSignal)) { this.ui.log('오류: ' + (e && e.message ? e.message : e), 'err'); this.stop('error'); }
+          if (!(e instanceof StopSignal)) { this.ui.log(this.ui.t('err') + ': ' + (e && e.message ? e.message : e), 'err'); this.stop('error'); }
         } finally {
           const id = this.hlMap.get(t); if (id) this.ui.highlight(id, false); this.hlMap.delete(t);
         }
@@ -308,12 +309,12 @@
       this.resetTimer(); this.vars = null;
       const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
       let setup;
-      try { setup = new AsyncFunction('W', code); } catch (e) { this.ui.log('코드 생성 오류: ' + e.message, 'err'); return; }
+      try { setup = new AsyncFunction('W', code); } catch (e) { this.ui.log(this.ui.t('code_err') + ': ' + e.message, 'err'); return; }
       this.running = true;
       this.dispatchEvent(new Event('state'));
-      try { await setup(this); } catch (e) { this.ui.log('오류: ' + e.message, 'err'); this.stop('error'); return; }
+      try { await setup(this); } catch (e) { this.ui.log(this.ui.t('err') + ': ' + e.message, 'err'); this.stop('error'); return; }
       const total = this.handlers.start.length + this.handlers.button.length + this.handlers.when.length + this.handlers.key.length;
-      if (!total) { this.ui.log('실행할 이벤트 블록이 없습니다. "▶ 실행 버튼을 누를 때" 블록 아래에 블록을 연결하세요.', 'warn'); this.stop('done'); return; }
+      if (!total) { this.ui.log(this.ui.t('no_events'), 'warn'); this.stop('done'); return; }
       this.handlers.when.forEach((h) => { h.prev = !!safe(h.cond); });
       this.handlers.start.forEach((fn) => this._thread(fn));
       this._poll();
@@ -346,7 +347,7 @@
       this.ui.clearHighlights();
       this.hlMap.clear();
       if (was) {
-        this.ui.log(reason === 'done' ? '프로그램이 끝났습니다.' : reason === 'error' ? '오류로 멈췄습니다.' : '프로그램을 멈췄습니다.', reason === 'error' ? 'err' : 'sys');
+        this.ui.log(this.ui.t(reason === 'done' ? 'end_done' : reason === 'error' ? 'end_error' : 'end_stop'), reason === 'error' ? 'err' : 'sys');
         this.dispatchEvent(new Event('state'));
       }
     }

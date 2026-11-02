@@ -3,84 +3,75 @@
   const JS = javascript.javascriptGenerator, JO = javascript.Order;
   const PY = python.pythonGenerator, PO = python.Order;
 
+  // 글씨가 잘 보이도록: 흰 글씨 블록은 대비 4.5:1 이상, 밝은 블록(이벤트·제어)은 진한 글씨
   const C = {
-    event: '#f5b800', motor: '#1e88e5', light: '#8a55d7', sound: '#d65cd6',
-    sensor: '#2bb3d9', control: '#ff9f1a', out: '#6b7c8f'
+    event: '#f2b705', motor: '#1f6fd1', light: '#7a4cc8', sound: '#b03aa8',
+    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a'
   };
   window.WEDO_COLORS = C;
 
-  const PORTS = [['포트 1', '1'], ['포트 2', '2']];
-  const MPORTS = [['포트 1', '1'], ['포트 2', '2'], ['모든 포트', '0']];
-  const COLORS = [
-    ['빨강', 'RED'], ['주황', 'ORANGE'], ['노랑', 'YELLOW'], ['초록', 'GREEN'], ['하늘', 'CYAN'],
-    ['파랑', 'BLUE'], ['보라', 'PURPLE'], ['분홍', 'PINK'], ['흰색', 'WHITE']
-  ];
-  const NOTES = [
-    ['도 (C4)', '262'], ['레 (D4)', '294'], ['미 (E4)', '330'], ['파 (F4)', '349'],
-    ['솔 (G4)', '392'], ['라 (A4)', '440'], ['시 (B4)', '494'], ['높은 도 (C5)', '523']
-  ];
-  const TILTS = [['위쪽', 'UP'], ['아래쪽', 'DOWN'], ['왼쪽', 'LEFT'], ['오른쪽', 'RIGHT']];
-  const TILTS_ANY = TILTS.concat([['아무 방향', 'ANY']]);
-  const KEYS = [['스페이스', 'space'], ['↑ 위 화살표', 'up'], ['↓ 아래 화살표', 'down'], ['← 왼쪽 화살표', 'left'], ['→ 오른쪽 화살표', 'right'], ['엔터', 'enter'], ['아무', 'any']]
-    .concat('abcdefghijklmnopqrstuvwxyz'.split('').map((c) => [c.toUpperCase(), c]))
-    .concat('0123456789'.split('').map((c) => [c, c]));
-  const C_KEY = '#e0703a';
-  window.WEDO_KEYS = KEYS;
-  const NUM = (name) => ({ type: 'input_value', name, check: 'Number' });
-  const st = (o) => Object.assign({ previousStatement: null, nextStatement: null }, o);
+  const COLOR_KEYS = ['RED', 'ORANGE', 'YELLOW', 'GREEN', 'CYAN', 'BLUE', 'PURPLE', 'PINK', 'WHITE'];
+  const NOTE_FREQS = ['262', '294', '330', '349', '392', '440', '494', '523'];
+  const KEY_IDS = ['space', 'up', 'down', 'left', 'right', 'enter', 'any']
+    .concat('abcdefghijklmnopqrstuvwxyz'.split('')).concat('0123456789'.split(''));
+  const keyLabel = (k) => (k.length === 1 ? k.toUpperCase() : t('k_' + k));
+  const HATS = ['wedo_when_start', 'wedo_when_button', 'wedo_when_distance', 'wedo_when_tilt', 'wedo_when_key'];
+  window.WEDO_HATS = HATS;
 
-  Blockly.common.defineBlocksWithJsonArray([
-    // ---------- 이벤트 (모자 블록) ----------
-    { type: 'wedo_when_start', message0: '▶  실행 버튼을 누를 때', nextStatement: null, colour: C.event, tooltip: '실행 버튼을 누르면 아래 블록들이 실행됩니다.' },
-    { type: 'wedo_when_button', message0: '허브 버튼을 누를 때', nextStatement: null, colour: C.event, tooltip: 'WeDo 허브의 초록 버튼을 누를 때마다 실행됩니다.' },
-    { type: 'wedo_when_distance', message0: '거리 센서 값이 %1 %2 이 될 때',
-      args0: [{ type: 'field_dropdown', name: 'OP', options: [['<', 'LT'], ['>', 'GT']] }, { type: 'field_number', name: 'VAL', value: 30, min: 0, max: 100 }],
-      nextStatement: null, colour: C.event, tooltip: '조건이 거짓→참으로 바뀌는 순간 실행됩니다. (값 범위 0~100)' },
-    { type: 'wedo_when_tilt', message0: '허브가 %1 으로 기울어질 때',
-      args0: [{ type: 'field_dropdown', name: 'DIR', options: TILTS_ANY }], nextStatement: null, colour: C.event,
-      tooltip: '기울기 센서가 해당 방향으로 기울어지는 순간 실행됩니다.' },
+  // 언어가 바뀔 때마다 다시 정의 (블록 문장·선택지만 바뀌고, 저장 값은 그대로)
+  function defineBlocks() {
+    const PORTS = [[t('o_port1'), '1'], [t('o_port2'), '2']];
+    const MPORTS = PORTS.concat([[t('o_allports'), '0']]);
+    const COLORS = COLOR_KEYS.map((k) => [t('c_' + k), k]);
+    const NOTES = NOTE_FREQS.map((f) => [t('n_' + f), f]);
+    const TILTS = ['UP', 'DOWN', 'LEFT', 'RIGHT'].map((d) => [t('d_' + d), d]);
+    const TILTS_ANY = TILTS.concat([[t('d_ANY'), 'ANY']]);
+    const KEYS = KEY_IDS.map((k) => [keyLabel(k), k]);
+    const OPS = [['<', 'LT'], ['>', 'GT']];
+    const NUM = (name) => ({ type: 'input_value', name, check: 'Number' });
+    const DD = (name, options) => ({ type: 'field_dropdown', name, options });
+    const st = (o) => Object.assign({ previousStatement: null, nextStatement: null }, o);
+    window.WEDO_KEYS = KEYS;
 
-    { type: 'wedo_when_key', message0: '키보드 %1 키를 누를 때', args0: [{ type: 'field_dropdown', name: 'KEY', options: KEYS }],
-      nextStatement: null, colour: C.event, tooltip: 'PC 키보드의 키를 누를 때마다 실행됩니다. (한/영 상관없이 동작)' },
-
-    // ---------- 모터 ----------
-    st({ type: 'wedo_motor_on_for', message0: '%1 모터를 %2 초 동안 켜기', args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }, NUM('SECS')], colour: C.motor }),
-    st({ type: 'wedo_motor_on', message0: '%1 모터 켜기', args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }], colour: C.motor }),
-    st({ type: 'wedo_motor_off', message0: '%1 모터 끄기', args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }], colour: C.motor }),
-    st({ type: 'wedo_motor_power', message0: '%1 모터 파워를 %2 %% 로 정하기', args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }, NUM('POWER')], colour: C.motor, tooltip: '0 ~ 100' }),
-    st({ type: 'wedo_motor_dir', message0: '%1 모터 방향을 %2 으로 정하기',
-      args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }, { type: 'field_dropdown', name: 'DIR', options: [['↻ 시계방향', '1'], ['↺ 반시계방향', '-1']] }], colour: C.motor }),
-    st({ type: 'wedo_motor_reverse', message0: '%1 모터 방향 바꾸기', args0: [{ type: 'field_dropdown', name: 'PORT', options: MPORTS }], colour: C.motor }),
-
-    // ---------- 불빛 ----------
-    st({ type: 'wedo_light_color', message0: '허브 불빛을 %1 으로 켜기', args0: [{ type: 'field_dropdown', name: 'COLOR', options: COLORS }], colour: C.light }),
-    st({ type: 'wedo_light_rgb', message0: '허브 불빛을 R %1 G %2 B %3 으로 켜기', args0: [NUM('R'), NUM('G'), NUM('B')], inputsInline: true, colour: C.light, tooltip: '각 값 0 ~ 255' }),
-    st({ type: 'wedo_light_off', message0: '허브 불빛 끄기', colour: C.light }),
-
-    // ---------- 소리 ----------
-    st({ type: 'wedo_sound_note', message0: '%1 음을 %2 초 동안 연주하기', args0: [{ type: 'field_dropdown', name: 'NOTE', options: NOTES }, NUM('SECS')], colour: C.sound }),
-    st({ type: 'wedo_sound_tone', message0: '%1 Hz 소리를 %2 초 동안 연주하기', args0: [NUM('FREQ'), NUM('SECS')], inputsInline: true, colour: C.sound }),
-    st({ type: 'wedo_sound_stop', message0: '소리 끄기', colour: C.sound }),
-
-    // ---------- 센서 ----------
-    { type: 'wedo_distance', message0: '거리 센서 값', output: 'Number', colour: C.sensor, tooltip: '0(가까움) ~ 100(멂)' },
-    { type: 'wedo_distance_cmp', message0: '거리 센서 값 %1 %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['<', 'LT'], ['>', 'GT']] }, NUM('VAL')], inputsInline: true, output: 'Boolean', colour: C.sensor },
-    { type: 'wedo_tilt_is', message0: '허브가 %1 으로 기울어졌는가?', args0: [{ type: 'field_dropdown', name: 'DIR', options: TILTS_ANY }], output: 'Boolean', colour: C.sensor },
-    { type: 'wedo_tilt_angle', message0: '%1 기울기 각도', args0: [{ type: 'field_dropdown', name: 'DIR', options: TILTS }], output: 'Number', colour: C.sensor },
-    { type: 'wedo_button', message0: '허브 버튼이 눌렸는가?', output: 'Boolean', colour: C.sensor },
-    { type: 'wedo_key_pressed', message0: '키보드 %1 키가 눌렸는가?', args0: [{ type: 'field_dropdown', name: 'KEY', options: KEYS }], output: 'Boolean', colour: C.sensor },
-    { type: 'wedo_timer', message0: '타이머 (초)', output: 'Number', colour: C.sensor },
-    st({ type: 'wedo_reset_timer', message0: '타이머 초기화', colour: C.sensor }),
-
-    // ---------- 제어 ----------
-    st({ type: 'wedo_wait', message0: '%1 초 기다리기', args0: [NUM('SECS')], colour: C.control }),
-    st({ type: 'wedo_wait_until', message0: '%1 이 될 때까지 기다리기', args0: [{ type: 'input_value', name: 'COND', check: 'Boolean' }], colour: C.control }),
-    { type: 'wedo_forever', message0: '무한 반복하기 %1 %2', args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], previousStatement: null, colour: C.control },
-    { type: 'wedo_stop', message0: '■ 모든 프로그램 멈추기', previousStatement: null, colour: C.control },
-
-    // ---------- 출력 ----------
-    st({ type: 'wedo_print', message0: '%1 콘솔에 출력하기', args0: [{ type: 'input_value', name: 'TEXT' }], colour: C.out })
-  ]);
+    Blockly.common.defineBlocksWithJsonArray([
+      { type: 'wedo_when_start', message0: t('b_when_start'), nextStatement: null, colour: C.event },
+      { type: 'wedo_when_button', message0: t('b_when_button'), nextStatement: null, colour: C.event },
+      { type: 'wedo_when_key', message0: t('b_when_key'), args0: [DD('KEY', KEYS)], nextStatement: null, colour: C.event },
+      { type: 'wedo_when_distance', message0: t('b_when_distance'), args0: [DD('OP', OPS), { type: 'field_number', name: 'VAL', value: 30, min: 0, max: 100 }], nextStatement: null, colour: C.event },
+      { type: 'wedo_when_tilt', message0: t('b_when_tilt'), args0: [DD('DIR', TILTS_ANY)], nextStatement: null, colour: C.event },
+      st({ type: 'wedo_motor_on_for', message0: t('b_motor_on_for'), args0: [DD('PORT', MPORTS), NUM('SECS')], colour: C.motor }),
+      st({ type: 'wedo_motor_on', message0: t('b_motor_on'), args0: [DD('PORT', MPORTS)], colour: C.motor }),
+      st({ type: 'wedo_motor_off', message0: t('b_motor_off'), args0: [DD('PORT', MPORTS)], colour: C.motor }),
+      st({ type: 'wedo_motor_power', message0: t('b_motor_power'), args0: [DD('PORT', MPORTS), NUM('POWER')], colour: C.motor }),
+      st({ type: 'wedo_motor_dir', message0: t('b_motor_dir'), args0: [DD('PORT', MPORTS), DD('DIR', [[t('o_cw'), '1'], [t('o_ccw'), '-1']])], colour: C.motor }),
+      st({ type: 'wedo_motor_reverse', message0: t('b_motor_reverse'), args0: [DD('PORT', MPORTS)], colour: C.motor }),
+      st({ type: 'wedo_light_color', message0: t('b_light_color'), args0: [DD('COLOR', COLORS)], colour: C.light }),
+      st({ type: 'wedo_light_rgb', message0: t('b_light_rgb'), args0: [NUM('R'), NUM('G'), NUM('B')], inputsInline: true, colour: C.light }),
+      st({ type: 'wedo_light_off', message0: t('b_light_off'), colour: C.light }),
+      st({ type: 'wedo_sound_note', message0: t('b_sound_note'), args0: [DD('NOTE', NOTES), NUM('SECS')], colour: C.sound }),
+      st({ type: 'wedo_sound_tone', message0: t('b_sound_tone'), args0: [NUM('FREQ'), NUM('SECS')], inputsInline: true, colour: C.sound }),
+      st({ type: 'wedo_sound_stop', message0: t('b_sound_stop'), colour: C.sound }),
+      { type: 'wedo_distance', message0: t('b_distance'), output: 'Number', colour: C.sensor },
+      { type: 'wedo_distance_cmp', message0: t('b_distance_cmp'), args0: [DD('OP', OPS), NUM('VAL')], inputsInline: true, output: 'Boolean', colour: C.sensor },
+      { type: 'wedo_tilt_is', message0: t('b_tilt_is'), args0: [DD('DIR', TILTS_ANY)], output: 'Boolean', colour: C.sensor },
+      { type: 'wedo_tilt_angle', message0: t('b_tilt_angle'), args0: [DD('DIR', TILTS)], output: 'Number', colour: C.sensor },
+      { type: 'wedo_button', message0: t('b_button'), output: 'Boolean', colour: C.sensor },
+      { type: 'wedo_key_pressed', message0: t('b_key_pressed'), args0: [DD('KEY', KEYS)], output: 'Boolean', colour: C.sensor },
+      { type: 'wedo_timer', message0: t('b_timer'), output: 'Number', colour: C.sensor },
+      st({ type: 'wedo_reset_timer', message0: t('b_reset_timer'), colour: C.sensor }),
+      st({ type: 'wedo_wait', message0: t('b_wait'), args0: [NUM('SECS')], colour: C.control }),
+      st({ type: 'wedo_wait_until', message0: t('b_wait_until'), args0: [{ type: 'input_value', name: 'COND', check: 'Boolean' }], colour: C.control }),
+      { type: 'wedo_forever', message0: t('b_forever'), args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], previousStatement: null, colour: C.control },
+      { type: 'wedo_stop', message0: t('b_stop'), previousStatement: null, colour: C.control },
+      st({ type: 'wedo_print', message0: t('b_print'), args0: [{ type: 'input_value', name: 'TEXT' }], colour: C.out })
+    ]);
+    HATS.forEach((type) => {
+      const def = Blockly.Blocks[type];
+      const init = def.init;
+      def.init = function () { init.call(this); this.suppressPrefixSuffix = true; this.hat = 'cap'; };
+    });
+  }
+  defineBlocks();
 
   // 한글 변수 이름을 그대로 쓰도록 (Python 3 · JavaScript 모두 유니코드 식별자 허용)
   Blockly.Names.prototype.safeName = function (name) {
@@ -89,14 +80,6 @@
     if (/^\p{N}/u.test(s)) s = 'my_' + s;
     return s;
   };
-
-  const HATS = ['wedo_when_start', 'wedo_when_button', 'wedo_when_distance', 'wedo_when_tilt', 'wedo_when_key'];
-  window.WEDO_HATS = HATS;
-  HATS.forEach((t) => {
-    const def = Blockly.Blocks[t];
-    const init = def.init;
-    def.init = function () { init.call(this); this.suppressPrefixSuffix = true; this.hat = 'cap'; };
-  });
 
   // 모자 블록은 뒤따르는 블록을 함수 몸체로 감싸므로 기본 연결 처리를 막는다
   [JS, PY].forEach((G) => {
@@ -168,7 +151,7 @@
   PY.addReservedWords('wedo2,on_start,on_button,on_key,is_key_pressed,when,run,motor_on,motor_off,motor_on_for,motor_power,' +
     'motor_direction,motor_reverse,light_color,light_rgb,light_off,play_tone,stop_sound,distance,is_tilted,' +
     'tilt_angle,is_button_pressed,timer,reset_timer,wait,wait_until,stop_all,ALL,UP,DOWN,LEFT,RIGHT,ANY,' +
-    'CLOCKWISE,COUNTERCLOCKWISE,' + COLORS.map((c) => c[1]).join(','));
+    'CLOCKWISE,COUNTERCLOCKWISE,' + COLOR_KEYS.join(','));
   let hatSeq = 0;
   const pyGlobals = (b, G) => {
     const names = b.workspace.getAllVariables().map((x) => G.nameDB_.getName(x.getId(), Blockly.Names.NameType.VARIABLE));
@@ -220,6 +203,6 @@
 
   window.WEDO_GEN = {
     resetSeq() { hatSeq = 0; },
-    NOTES, COLORS
+    defineBlocks, COLOR_KEYS
   };
 })();

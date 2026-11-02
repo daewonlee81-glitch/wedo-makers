@@ -1,23 +1,24 @@
-/* ===== 앱 UI ===== */
+/* ===== 위두 메이커스 — 앱 UI ===== */
 (function () {
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
-  const STORE_KEY = 'wedo2-codinglab-project';
+  const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
+  const VERSION = '1.2.0';
+  const REPORT_EMAIL = 'robot-league@naver.com';
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---------- 대화상자 (sandbox 에서도 동작하도록 직접 구현) ---------- */
   const modalBg = $('#modalBg'), modal = $('#modal');
-  function openModal(html, onOpen) {
-    modal.innerHTML = html; modalBg.classList.add('on');
-    if (onOpen) onOpen(modal);
-  }
+  function openModal(html, onOpen) { modal.innerHTML = html; modalBg.classList.add('on'); if (onOpen) onOpen(modal); }
   function closeModal() { modalBg.classList.remove('on'); modal.innerHTML = ''; }
   modalBg.addEventListener('mousedown', (e) => { if (e.target === modalBg) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalBg.classList.contains('on')) closeModal(); });
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const closeBtn = (label) => `<div class="actions"><button class="btn primary" data-close>${esc(label || t('ok'))}</button></div>`;
+  modal.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(); });
 
   Blockly.dialog.setPrompt((msg, dflt, cb) => {
     openModal(`<h3>${esc(msg)}</h3><input type="text" id="pIn" value="${esc(dflt || '')}">
-      <div class="actions"><button class="btn" id="pNo">취소</button><button class="btn primary" id="pOk">확인</button></div>`, (m) => {
+      <div class="actions"><button class="btn" id="pNo">${t('cancel')}</button><button class="btn primary" id="pOk">${t('ok')}</button></div>`, (m) => {
       const inp = m.querySelector('#pIn'); inp.focus(); inp.select();
       const ok = () => { const v = inp.value; closeModal(); cb(v); };
       m.querySelector('#pOk').onclick = ok;
@@ -26,154 +27,172 @@
     });
   });
   Blockly.dialog.setConfirm((msg, cb) => {
-    openModal(`<p>${esc(msg)}</p><div class="actions"><button class="btn" id="cNo">취소</button><button class="btn primary" id="cOk">확인</button></div>`, (m) => {
+    openModal(`<p>${esc(msg)}</p><div class="actions"><button class="btn" id="cNo">${t('cancel')}</button><button class="btn primary" id="cOk">${t('ok')}</button></div>`, (m) => {
       m.querySelector('#cOk').onclick = () => { closeModal(); cb(true); };
       m.querySelector('#cNo').onclick = () => { closeModal(); cb(false); };
     });
   });
   Blockly.dialog.setAlert((msg, cb) => {
-    openModal(`<p>${esc(msg)}</p><div class="actions"><button class="btn primary" id="aOk">확인</button></div>`, (m) => {
+    openModal(`<p>${esc(msg)}</p><div class="actions"><button class="btn primary" id="aOk">${t('ok')}</button></div>`, (m) => {
       m.querySelector('#aOk').onclick = () => { closeModal(); if (cb) cb(); };
     });
   });
 
   let toastT;
   function toast(msg, ms = 2600) {
-    const t = $('#toast'); t.textContent = msg; t.classList.add('on');
-    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms);
+    const el = $('#toast'); el.textContent = msg; el.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), ms);
   }
 
-  /* ---------- 테마 · 도구상자 ---------- */
-  ['controls_if', 'controls_repeat_ext', 'controls_whileUntil'].forEach((t) => {
-    const o = Blockly.Blocks[t].init;
-    Blockly.Blocks[t].init = function () { o.call(this); this.setStyle('loop_blocks'); };
+  /* ---------- 블록 글씨 가독성 ---------- */
+  // 밝은 색 블록(이벤트·제어)은 진한 글씨로, 나머지는 흰 글씨(대비 4.5:1 이상 색상 사용)
+  const lum = (hex) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return 0;
+    const [r, g, b] = [0, 2, 4].map((i) => { const c = parseInt(m[1].substr(i, 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const origApply = Blockly.BlockSvg.prototype.applyColour;
+  Blockly.BlockSvg.prototype.applyColour = function () {
+    origApply.call(this);
+    const root = this.getSvgRoot && this.getSvgRoot();
+    if (root) root.classList.toggle('wm-dark', !this.isShadow() && lum(this.getColour()) > 0.32);
+  };
+
+  /* ---------- 테마 ---------- */
+  ['controls_if', 'controls_repeat_ext', 'controls_whileUntil'].forEach((type) => {
+    const o = Blockly.Blocks[type].init;
+    Blockly.Blocks[type].init = function () { o.call(this); this.setStyle('loop_blocks'); };
   });
-  const theme = Blockly.Theme.defineTheme('wedo', {
+  const FONT = '"Noto Sans KR", "Noto Sans JP", "Noto Sans SC", system-ui, sans-serif';
+  const theme = Blockly.Theme.defineTheme('wedomakers', {
     base: Blockly.Themes.Classic,
     blockStyles: {
-      logic_blocks: { colourPrimary: '#4fb85a' }, math_blocks: { colourPrimary: '#4fb85a' },
-      text_blocks: { colourPrimary: '#4fb85a' }, loop_blocks: { colourPrimary: C.control },
-      variable_blocks: { colourPrimary: '#ff7a1a' }, procedure_blocks: { colourPrimary: '#ff6680' }
+      logic_blocks: { colourPrimary: C.op }, math_blocks: { colourPrimary: C.op }, text_blocks: { colourPrimary: C.op },
+      loop_blocks: { colourPrimary: C.control }, variable_blocks: { colourPrimary: C.variable }, procedure_blocks: { colourPrimary: '#c2185b' }
     },
     componentStyles: {
       workspaceBackgroundColour: '#f4f6fa', toolboxBackgroundColour: '#ffffff', toolboxForegroundColour: '#1d2433',
       flyoutBackgroundColour: '#e9eef5', flyoutOpacity: 1, scrollbarColour: '#c9d2de', scrollbarOpacity: 0.7,
       insertionMarkerColour: '#000', insertionMarkerOpacity: 0.2
     },
-    fontStyle: { family: '"Noto Sans KR", system-ui, sans-serif', weight: '600', size: 12 },
+    fontStyle: { family: FONT, weight: '700', size: 13.5 },
     startHats: true
   });
+
+  /* ---------- 도구상자 (언어별) ---------- */
   const n = (v) => ({ shadow: { type: 'math_number', fields: { NUM: v } } });
   const B = (type, inputs, extra) => Object.assign({ kind: 'block', type }, inputs ? { inputs } : {}, extra || {});
-  const toolbox = {
-    kind: 'categoryToolbox',
-    contents: [
-      { kind: 'category', name: '이벤트', colour: C.event, contents: [
-        B('wedo_when_start'), B('wedo_when_button'), B('wedo_when_key'), B('wedo_when_distance'), B('wedo_when_tilt')] },
-      { kind: 'category', name: '모터', colour: C.motor, contents: [
-        B('wedo_motor_on_for', { SECS: n(1) }), B('wedo_motor_on'), B('wedo_motor_off'),
-        B('wedo_motor_power', { POWER: n(50) }), B('wedo_motor_dir'), B('wedo_motor_reverse')] },
-      { kind: 'category', name: '불빛', colour: C.light, contents: [
-        B('wedo_light_color'), B('wedo_light_rgb', { R: n(255), G: n(0), B: n(120) }), B('wedo_light_off')] },
-      { kind: 'category', name: '소리', colour: C.sound, contents: [
-        B('wedo_sound_note', { SECS: n(0.5) }), B('wedo_sound_tone', { FREQ: n(440), SECS: n(0.5) }), B('wedo_sound_stop')] },
-      { kind: 'category', name: '센서', colour: C.sensor, contents: [
-        B('wedo_distance'), B('wedo_distance_cmp', { VAL: n(30) }), B('wedo_tilt_is'), B('wedo_tilt_angle'),
-        B('wedo_button'), B('wedo_key_pressed'), B('wedo_timer'), B('wedo_reset_timer')] },
-      { kind: 'category', name: '제어', colour: C.control, contents: [
-        B('wedo_wait', { SECS: n(1) }), B('controls_repeat_ext', { TIMES: n(10) }), B('wedo_forever'),
-        B('controls_if'), B('controls_if', null, { extraState: { hasElse: true } }),
-        B('wedo_wait_until'), B('controls_whileUntil'), B('wedo_stop')] },
-      { kind: 'category', name: '연산', colour: '#4fb85a', contents: [
-        B('math_number'), B('math_arithmetic', { A: n(1), B: n(1) }), B('math_random_int', { FROM: n(1), TO: n(10) }),
-        B('logic_compare', { A: n(0), B: n(0) }), B('logic_operation'), B('logic_negate'), B('logic_boolean'),
-        B('math_round', { NUM: n(3.1) }), B('math_modulo', { DIVIDEND: n(10), DIVISOR: n(3) }), B('math_single', { NUM: n(9) }),
-        B('text'), B('text_join')] },
-      { kind: 'category', name: '변수', colour: '#ff7a1a', custom: 'WEDO_VARIABLE' },
-      { kind: 'category', name: '출력', colour: C.out, contents: [
-        B('wedo_print', { TEXT: { shadow: { type: 'text', fields: { TEXT: '안녕 WeDo!' } } } })] }
-    ]
-  };
+  function buildToolbox() {
+    return {
+      kind: 'categoryToolbox',
+      contents: [
+        { kind: 'category', name: t('cat_event'), colour: C.event, contents: [
+          B('wedo_when_start'), B('wedo_when_button'), B('wedo_when_key'), B('wedo_when_distance'), B('wedo_when_tilt')] },
+        { kind: 'category', name: t('cat_motor'), colour: C.motor, contents: [
+          B('wedo_motor_on_for', { SECS: n(1) }), B('wedo_motor_on'), B('wedo_motor_off'),
+          B('wedo_motor_power', { POWER: n(50) }), B('wedo_motor_dir'), B('wedo_motor_reverse')] },
+        { kind: 'category', name: t('cat_light'), colour: C.light, contents: [
+          B('wedo_light_color'), B('wedo_light_rgb', { R: n(255), G: n(0), B: n(120) }), B('wedo_light_off')] },
+        { kind: 'category', name: t('cat_sound'), colour: C.sound, contents: [
+          B('wedo_sound_note', { SECS: n(0.5) }), B('wedo_sound_tone', { FREQ: n(440), SECS: n(0.5) }), B('wedo_sound_stop')] },
+        { kind: 'category', name: t('cat_sensor'), colour: C.sensor, contents: [
+          B('wedo_distance'), B('wedo_distance_cmp', { VAL: n(30) }), B('wedo_tilt_is'), B('wedo_tilt_angle'),
+          B('wedo_button'), B('wedo_key_pressed'), B('wedo_timer'), B('wedo_reset_timer')] },
+        { kind: 'category', name: t('cat_control'), colour: C.control, contents: [
+          B('wedo_wait', { SECS: n(1) }), B('controls_repeat_ext', { TIMES: n(10) }), B('wedo_forever'),
+          B('controls_if'), B('controls_if', null, { extraState: { hasElse: true } }),
+          B('wedo_wait_until'), B('controls_whileUntil'), B('wedo_stop')] },
+        { kind: 'category', name: t('cat_op'), colour: C.op, contents: [
+          B('math_number'), B('math_arithmetic', { A: n(1), B: n(1) }), B('math_random_int', { FROM: n(1), TO: n(10) }),
+          B('logic_compare', { A: n(0), B: n(0) }), B('logic_operation'), B('logic_negate'), B('logic_boolean'),
+          B('math_round', { NUM: n(3.1) }), B('math_modulo', { DIVIDEND: n(10), DIVISOR: n(3) }), B('math_single', { NUM: n(9) }),
+          B('text'), B('text_join')] },
+        { kind: 'category', name: t('cat_var'), colour: C.variable, custom: 'WEDO_VARIABLE' },
+        { kind: 'category', name: t('cat_out'), colour: C.out, contents: [
+          B('wedo_print', { TEXT: { shadow: { type: 'text', fields: { TEXT: t('print_default') } } } })] }
+      ]
+    };
+  }
 
-  const ws = Blockly.inject('blockArea', {
-    toolbox, theme, renderer: 'zelos', sounds: false, trashcan: false,
-    zoom: { controls: false, wheel: true, startScale: 0.78, maxScale: 2, minScale: 0.35, scaleSpeed: 1.15, pinch: true },
-    grid: { spacing: 28, length: 2, colour: '#dbe2ec', snap: false },
-    move: { scrollbars: true, drag: true, wheel: false }
-  });
-  ws.addChangeListener(Blockly.Events.disableOrphans);
-
-  /* ---------- 변수 분류: 숫자를 바로 넣을 수 있게 ---------- */
-  ws.registerButtonCallback('WEDO_CREATE_VAR', (btn) => Blockly.Variables.createVariableButtonHandler(btn.getTargetWorkspace(), null, ''));
-  ws.registerToolboxCategoryCallback('WEDO_VARIABLE', (w) => {
-    const items = [{ kind: 'button', text: '＋ 변수 만들기', callbackkey: 'WEDO_CREATE_VAR' }];
-    const vars = w.getAllVariables().sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    if (!vars.length) {
-      items.push({ kind: 'label', text: '변수를 만들면 숫자를 저장하고 계산할 수 있어요.' });
+  /* ---------- 작업 공간 (언어를 바꾸면 다시 만든다) ---------- */
+  let ws = null;
+  let suppressSave = false;
+  function applyBlocklyMessages(lang) {
+    Object.assign(Blockly.Msg, window.BLOCKLY_MSGS.en, window.BLOCKLY_MSGS[I18N.BLOCKLY_CODE[lang]] || {});
+  }
+  function createWorkspace(state) {
+    if (ws) { suppressSave = true; ws.dispose(); }
+    ws = Blockly.inject('blockArea', {
+      toolbox: buildToolbox(), theme, renderer: 'zelos', sounds: false, trashcan: false,
+      zoom: { controls: false, wheel: true, startScale: 0.8, maxScale: 2, minScale: 0.35, scaleSpeed: 1.15, pinch: true },
+      grid: { spacing: 28, length: 2, colour: '#dbe2ec', snap: false },
+      move: { scrollbars: true, drag: true, wheel: false }
+    });
+    ws.addChangeListener(Blockly.Events.disableOrphans);
+    // 변수 분류: 숫자를 바로 넣을 수 있게
+    ws.registerButtonCallback('WEDO_CREATE_VAR', (btn) => Blockly.Variables.createVariableButtonHandler(btn.getTargetWorkspace(), null, ''));
+    ws.registerToolboxCategoryCallback('WEDO_VARIABLE', (w) => {
+      const items = [{ kind: 'button', text: t('var_create'), callbackkey: 'WEDO_CREATE_VAR' }];
+      const vars = w.getAllVariables().sort((a, b) => a.name.localeCompare(b.name));
+      if (!vars.length) { items.push({ kind: 'label', text: t('var_hint') }); return items; }
+      const first = { VAR: { id: vars[0].getId() } };
+      items.push(
+        { kind: 'block', type: 'variables_set', fields: first, inputs: { VALUE: n(0) } },
+        { kind: 'block', type: 'math_change', fields: first, inputs: { DELTA: n(1) } },
+        { kind: 'block', type: 'variables_set', fields: first, inputs: { VALUE: { block: { type: 'wedo_distance' } } } },
+        { kind: 'sep', gap: 24 });
+      vars.forEach((v) => items.push({ kind: 'block', type: 'variables_get', fields: { VAR: { id: v.getId() } } }));
       return items;
+    });
+    ws.addChangeListener((e) => {
+      if (e.type === Blockly.Events.VAR_CREATE || e.type === Blockly.Events.VAR_DELETE || e.type === Blockly.Events.VAR_RENAME || e.type === Blockly.Events.FINISHED_LOADING) renderVars();
+      if (e.isUiEvent) return;
+      refreshCode();
+      if (!suppressSave) autosave();
+    });
+    if (state) {
+      try { Blockly.serialization.workspaces.load(state, ws); } catch (e) { toast(e.message); }
     }
-    const first = { VAR: { id: vars[0].getId() } };
-    items.push(
-      { kind: 'block', type: 'variables_set', fields: first, inputs: { VALUE: { shadow: { type: 'math_number', fields: { NUM: 0 } } } } },
-      { kind: 'block', type: 'math_change', fields: first, inputs: { DELTA: { shadow: { type: 'math_number', fields: { NUM: 1 } } } } },
-      { kind: 'block', type: 'variables_set', fields: first, inputs: { VALUE: { block: { type: 'wedo_distance' } } } },
-      { kind: 'sep', gap: 24 });
-    vars.forEach((v) => items.push({ kind: 'block', type: 'variables_get', fields: { VAR: { id: v.getId() } } }));
-    return items;
-  });
+    suppressSave = false;
+    return ws;
+  }
   $('#zIn').onclick = () => ws.zoomCenter(1);
   $('#zOut').onclick = () => ws.zoomCenter(-1);
   $('#zFit').onclick = () => { ws.zoomToFit(); if (ws.scale > 1) ws.setScale(1); ws.scrollCenter(); };
 
-  /* ---------- 예제 프로젝트 ---------- */
-  const num = (v) => ({ shadow: { type: 'math_number', fields: { NUM: v } } });
-  // chain(a, b, c): a → b → c 로 연결된 블록 묶음
+  /* ---------- 예제 ---------- */
   const chain = (...bs) => { for (let i = bs.length - 2; i >= 0; i--) bs[i].next = { block: bs[i + 1] }; return bs[0]; };
-  const ifElse = {
-    type: 'controls_if', extraState: { hasElse: true }, inputs: {
-      IF0: { block: { type: 'wedo_distance_cmp', fields: { OP: 'LT' }, inputs: { VAL: num(30) } } },
-      DO0: { block: chain(
-        { type: 'wedo_light_color', fields: { COLOR: 'RED' } },
-        { type: 'wedo_motor_on_for', fields: { PORT: '1' }, inputs: { SECS: num(1) } }) },
-      ELSE: { block: { type: 'wedo_light_color', fields: { COLOR: 'GREEN' } } }
-    }
-  };
-  const EXAMPLE = {
-    blocks: { languageVersion: 0, blocks: [
-      chain(
-        { type: 'wedo_when_start', x: 40, y: 40 },
-        { type: 'wedo_light_color', fields: { COLOR: 'GREEN' } },
-        { type: 'wedo_sound_note', fields: { NOTE: '523' }, inputs: { SECS: num(0.2) } },
-        { type: 'wedo_forever', inputs: { DO: { block: ifElse } } }),
-      chain(
-        { type: 'wedo_when_button', x: 470, y: 40 },
-        { type: 'wedo_print', inputs: { TEXT: { shadow: { type: 'text', fields: { TEXT: '버튼을 눌렀어요!' } } } } },
+  function example() {
+    const ifElse = {
+      type: 'controls_if', extraState: { hasElse: true }, inputs: {
+        IF0: { block: { type: 'wedo_distance_cmp', fields: { OP: 'LT' }, inputs: { VAL: n(30) } } },
+        DO0: { block: chain({ type: 'wedo_light_color', fields: { COLOR: 'RED' } }, { type: 'wedo_motor_on_for', fields: { PORT: '1' }, inputs: { SECS: n(1) } }) },
+        ELSE: { block: { type: 'wedo_light_color', fields: { COLOR: 'GREEN' } } }
+      }
+    };
+    return { blocks: { languageVersion: 0, blocks: [
+      chain({ type: 'wedo_when_start', x: 40, y: 40 }, { type: 'wedo_light_color', fields: { COLOR: 'GREEN' } },
+        { type: 'wedo_sound_note', fields: { NOTE: '523' }, inputs: { SECS: n(0.2) } }, { type: 'wedo_forever', inputs: { DO: { block: ifElse } } }),
+      chain({ type: 'wedo_when_button', x: 520, y: 40 },
+        { type: 'wedo_print', inputs: { TEXT: { shadow: { type: 'text', fields: { TEXT: t('ex_button_msg') } } } } },
         { type: 'wedo_motor_reverse', fields: { PORT: '0' } })
-    ] }
-  };
+    ] } };
+  }
 
   /* ---------- 저장/불러오기 ---------- */
-  function loadJSON(obj, name) {
-    ws.clear();
-    try { Blockly.serialization.workspaces.load(obj.workspace || obj, ws); }
-    catch (e) { toast('프로젝트를 불러오지 못했습니다: ' + e.message); return false; }
+  function loadProject(obj, name) {
+    createWorkspace(obj.workspace || obj);
     if (name || obj.name) $('#projName').value = name || obj.name;
     setTimeout(() => $('#zFit').onclick(), 30);
+    refreshCode(); renderVars();
     return true;
   }
   function currentProject() {
-    return { app: 'wedo2-codinglab', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
+    return { app: 'wedomakers', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
   }
   function autosave() { try { localStorage.setItem(STORE_KEY, JSON.stringify(currentProject())); } catch (e) { /* 저장소 없음 */ } }
-  (function initLoad() {
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
-    if (saved && saved.workspace) loadJSON(saved);
-    else loadJSON(EXAMPLE, '거리 센서 경보기 (예제)');
-  })();
 
   function safeName(s) { return (s || 'wedo').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'wedo'; }
-  // claude.ai 아티팩트 안에서는 downloads 기능으로, 일반 웹에서는 링크로 저장
   let dlCap;
   async function hostDownloads() {
     if (dlCap !== undefined) return dlCap;
@@ -186,7 +205,7 @@
       try { await cap.save({ filename, data: text }); return; }
       catch (e) {
         try { await cap.save({ filename, data: new Blob([text], { type: mime || 'text/plain' }) }); return; }
-        catch (e2) { toast('저장이 취소되었거나 막혔습니다. 복사를 사용하세요.'); return; }
+        catch (e2) { toast(t('save_blocked')); return; }
       }
     }
     try {
@@ -195,35 +214,34 @@
       a.href = URL.createObjectURL(blob); a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast(`${filename} 저장 — 다운로드가 막힌 환경이면 '복사'를 사용하세요.`);
-    } catch (e) { toast('이 화면에서는 다운로드가 차단됩니다. 복사를 사용하세요.'); }
+      toast(`${t('saved_as')} ${filename}`);
+    } catch (e) { toast(t('save_blocked')); }
   }
-  async function copy(text, label) {
-    try { await navigator.clipboard.writeText(text); toast(`${label} 복사했습니다.`); }
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); toast(t('copied')); }
     catch (e) {
-      openModal(`<h3>${esc(label)}</h3><p class="muted">자동 복사가 막혀 있습니다. 아래 내용을 선택해 복사하세요.</p><textarea style="width:100%;height:300px;font-family:monospace">${esc(text)}</textarea><div class="actions"><button class="btn primary" onclick="document.getElementById('modalBg').classList.remove('on')">닫기</button></div>`);
+      openModal(`<p class="muted">${t('copy_manual')}</p><textarea style="width:100%;height:300px;font-family:monospace">${esc(text)}</textarea>${closeBtn(t('close'))}`);
     }
   }
   $('#btnSave').onclick = () => download(safeName($('#projName').value) + '.wedo.json', JSON.stringify(currentProject(), null, 2), 'application/json');
   $('#btnOpen').onclick = () => $('#fileIn').click();
   $('#fileIn').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
-    try { const obj = JSON.parse(await f.text()); if (loadJSON(obj, obj.name || f.name.replace(/\.wedo\.json$|\.json$/, ''))) toast('프로젝트를 열었습니다.'); }
-    catch (err) { toast('올바른 프로젝트 파일이 아닙니다.'); }
+    try { const obj = JSON.parse(await f.text()); loadProject(obj, obj.name || f.name.replace(/\.wedo\.json$|\.json$/, '')); toast(t('opened')); }
+    catch (err) { toast(t('open_fail')); }
     e.target.value = '';
   };
-  $('#btnNew').onclick = () => Blockly.dialog.confirm('지금 작업을 지우고 새 프로젝트를 시작할까요?', (ok) => {
+  $('#btnNew').onclick = () => Blockly.dialog.confirm(t('confirm_new'), (ok) => {
     if (!ok) return;
-    ws.clear();
-    Blockly.serialization.workspaces.load({ blocks: { languageVersion: 0, blocks: [{ type: 'wedo_when_start', x: 40, y: 40 }] } }, ws);
-    $('#projName').value = '새 프로젝트'; ws.scrollCenter();
+    loadProject({ blocks: { languageVersion: 0, blocks: [{ type: 'wedo_when_start', x: 40, y: 40 }] } }, t('proj_new'));
+    autosave();
   });
   $('#projName').addEventListener('change', autosave);
 
-  /* ---------- Python 코드 생성 + 강조 ---------- */
+  /* ---------- Python 코드 ---------- */
   const PY_KW = new Set('False None True and as break continue def elif else for from global if import in is lambda not or pass return while with'.split(' '));
   const PY_BI = new Set('print range int float str len abs round min max random math'.split(' '));
-  const PY_CONST = new Set(['ALL', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'ANY', 'CLOCKWISE', 'COUNTERCLOCKWISE'].concat(window.WEDO_GEN.COLORS.map((c) => c[1])));
+  const PY_CONST = new Set(['ALL', 'UP', 'DOWN', 'LEFT', 'RIGHT', 'ANY', 'CLOCKWISE', 'COUNTERCLOCKWISE'].concat(window.WEDO_GEN.COLOR_KEYS));
   function highlightPy(src) {
     const re = /(#[^\n]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(@[\w.]+)|\b(\d+(?:\.\d+)?)\b|\b([A-Za-z_]\w*)\b(\s*\()?/g;
     return src.split('\n').map((line) => {
@@ -251,8 +269,8 @@
     window.WEDO_GEN.resetSeq();
     let body = python.pythonGenerator.workspaceToCode(ws).replace(/\n{3,}/g, '\n\n').trim();
     const name = $('#projName').value.replace(/\n/g, ' ');
-    const head = `# ${name}\n# 위두 메이커스(WeDo 2.0)에서 블록으로 만든 코드입니다.\n# 실행: pip install bleak  →  이 파일 옆에 wedo2.py 를 두고  python 파일이름.py\n\nfrom wedo2 import *\n`;
-    if (!body) body = '# 이벤트 블록(예: ▶ 실행 버튼을 누를 때)을 놓고 블록을 연결해 보세요.';
+    const head = `# ${name}\n# ${t('py_head1')}\n# ${t('py_head2')}\n\nfrom wedo2 import *\n`;
+    if (!body) body = '# ' + t('py_empty');
     return `${head}\n${body}\n\nrun()\n`;
   }
   function genJS() {
@@ -262,74 +280,81 @@
     G.addReservedWords('W,__t');
     try {
       let code = G.workspaceToCode(ws);
-      // 변수 모니터: 실행 중 변수 값을 화면에 보여 주기 위한 읽기 함수
+      // 변수 모니터용 읽기 함수
       const vs = ws.getAllVariables();
       if (vs.length) {
-        G.init(ws); // 이름 표를 다시 만들어 생성 코드와 같은 변수 이름을 얻는다
+        G.init(ws);
         const pairs = vs.map((v) => `${JSON.stringify(v.name)}: ${G.nameDB_.getName(v.getId(), Blockly.Names.NameType.VARIABLE)}`);
         code += `\nW.vars = () => ({ ${pairs.join(', ')} });\n`;
       }
       return code;
     } finally { G.STATEMENT_PREFIX = null; G.INFINITE_LOOP_TRAP = null; if (G.nameDB_) G.nameDB_.reset(); G.isInitialized = false; }
   }
-  let pySrc = '';
-  let genT;
+  let pySrc = '', genT;
   function refreshCode() {
     clearTimeout(genT);
     genT = setTimeout(() => {
+      if (!ws) return;
       try { pySrc = genPython(); $('#pyCode').innerHTML = highlightPy(pySrc); }
-      catch (e) { $('#pyCode').textContent = '# 코드 생성 오류: ' + e.message; }
+      catch (e) { $('#pyCode').textContent = `# ${t('code_err')}: ${e.message}`; }
     }, 80);
   }
-  ws.addChangeListener((e) => {
-    if (e.isUiEvent) return;
-    refreshCode(); autosave();
-  });
   $('#projName').addEventListener('input', refreshCode);
-  refreshCode();
-  $('#btnCopyPy').onclick = () => copy(pySrc, 'Python 코드를');
+  $('#btnCopyPy').onclick = () => copy(pySrc);
   $('#btnSavePy').onclick = () => download(safeName($('#projName').value).replace(/\s+/g, '_') + '.py', pySrc);
-
   $('#btnPyHelp').onclick = () => openModal(`
-    <h3>생성된 Python 코드를 PC에서 실행하기</h3>
-    <ol>
-      <li>Python 3.9 이상을 설치하고, 터미널에서 <code>pip install bleak</code> 를 실행합니다.</li>
-      <li>아래 <b>wedo2.py</b> 라이브러리를 받아 <code>.py 저장</code>으로 받은 파일과 같은 폴더에 둡니다.</li>
-      <li>WeDo 허브의 초록 버튼을 눌러 불이 깜빡이게 한 뒤 <code>python 내프로젝트.py</code> 를 실행합니다.</li>
-    </ol>
-    <p class="muted">블루투스가 있는 Windows · macOS · Linux에서 동작합니다. 웹에서 이미 허브에 연결 중이면 먼저 연결을 끊으세요. <kbd>Ctrl</kbd>+<kbd>C</kbd>로 멈춥니다.</p>
-    <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="dlLib">wedo2.py 저장</button><button class="btn" id="cpLib">wedo2.py 복사</button></div>
-    <h3 style="margin-top:18px">사용할 수 있는 함수</h3>
+    <h3>${t('pyhelp_title')}</h3>${t('pyhelp_body')}
+    <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="dlLib">${t('lib_save')}</button><button class="btn" id="cpLib">${t('lib_copy')}</button></div>
+    <h3 style="margin-top:18px">${t('funcs')}</h3>
     <pre><code>motor_on(1) / motor_off(ALL) / motor_on_for(1, 2)
 motor_power(1, 50) / motor_direction(1, CLOCKWISE) / motor_reverse(2)
 light_color(RED) / light_rgb(255, 0, 120) / light_off()
 play_tone(440, 0.5) / stop_sound()
-distance() → 0~100      is_tilted(UP) / tilt_angle(LEFT)
-is_button_pressed()     timer() / reset_timer()
-is_key_pressed('space')  ← PC 키보드 (pip install pynput 필요)
+distance()  → 0~100     is_tilted(UP) / tilt_angle(LEFT)
+is_button_pressed()     is_key_pressed('space')
+timer() / reset_timer()
 wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
 
-@on_start  @on_button  @on_key('up')  @when(lambda: 조건)   →  마지막 줄에 run()</code></pre>
-    <div class="actions"><button class="btn" id="mClose">닫기</button></div>`, (m) => {
+@on_start  @on_button  @on_key('up')  @when(lambda: ...)   →  run()</code></pre>
+    ${closeBtn(t('close'))}`, (m) => {
     m.querySelector('#dlLib').onclick = () => download('wedo2.py', window.WEDO2_PY);
-    m.querySelector('#cpLib').onclick = () => copy(window.WEDO2_PY, 'wedo2.py 를');
-    m.querySelector('#mClose').onclick = closeModal;
+    m.querySelector('#cpLib').onclick = () => copy(window.WEDO2_PY);
   });
+  $('#btnHelp').onclick = () => openModal(`<h3>${t('help_title')}</h3>${t('help_body')}
+    <p class="muted">${t('report_line')} <b>${REPORT_EMAIL}</b> · v${VERSION}</p>${closeBtn()}`);
 
-  $('#btnHelp').onclick = () => openModal(`
-    <h3>위두 메이커스 사용법</h3>
-    <ol>
-      <li><b>허브 연결</b>: WeDo 2.0 허브의 초록 버튼을 누른 뒤 <b>허브 연결</b>을 누르고 목록에서 허브(LPF2 Smart Hub…)를 고릅니다. 연결되면 허브 불빛이 <b style="color:#1e5bff">파랑</b>으로 켜지고, 프로그램이 끝나거나 정지하면 다시 파랑으로 돌아옵니다.</li>
-      <li><b>코딩</b>: 왼쪽 분류에서 블록을 끌어와 <b>▶ 실행 버튼을 누를 때</b> 아래에 붙입니다. 오른쪽에 같은 내용의 Python 코드가 바로 보입니다.</li>
-      <li><b>실행/정지</b>: 초록 <b>실행</b> 버튼, 빨간 <b>정지</b> 버튼. 실행 중인 블록은 노란 테두리로 표시됩니다.</li>
-      <li><b>키보드 신호</b>: <b>키보드 ○ 키를 누를 때</b>(이벤트)와 <b>키보드 ○ 키가 눌렸는가?</b>(센서) 블록으로 PC 키보드를 리모컨처럼 쓸 수 있습니다. 화살표·스페이스·엔터·A~Z·0~9를 쓸 수 있고, 한/영 상태와 관계없이 동작합니다.</li>
-      <li><b>변수</b>: <b>변수</b> 분류에서 변수를 만들고 숫자를 넣거나(<code>정하기</code>) 바꿀 수(<code>바꾸기</code>) 있습니다. 실행 중 값은 아래 허브 탭에 표시됩니다.</li>
-      <li><b>가상 허브</b>: 허브가 없어도 실행됩니다. 아래 <b>허브</b> 탭에서 거리·기울기·버튼 값을 바꿔 보며 시험하세요.</li>
-    </ol>
-    <p><b>포트</b>: 허브의 두 연결 단자가 포트 1, 포트 2입니다. 모터·거리 센서·기울기 센서는 아무 포트에 꽂아도 자동으로 인식합니다.</p>
-    <p><b>브라우저</b>: 블루투스 연결은 PC/크롬북의 <b>Chrome · Edge</b>에서 <b>https</b> 주소로 열었을 때 동작합니다. (iPhone/iPad Safari는 Web Bluetooth를 지원하지 않습니다.)</p>
-    <p class="muted">작업은 이 브라우저에 자동 저장됩니다. 다른 PC로 옮길 때는 상단 <b>저장</b>으로 .wedo.json 파일을 받으세요.</p>
-    <div class="actions"><button class="btn primary" id="mClose">확인</button></div>`, (m) => { m.querySelector('#mClose').onclick = closeModal; });
+  /* ---------- 오류 신고 ---------- */
+  function diagnostics() {
+    const lines = [...document.querySelectorAll('#logs .log')].slice(-40).map((d) => d.textContent.replace(/^(\d\d:\d\d:\d\d)/, '$1 '));
+    return [
+      `WeDo Makers v${VERSION}`,
+      `Lang: ${I18N.lang}`,
+      `Browser: ${navigator.userAgent}`,
+      `Bluetooth: ${'bluetooth' in navigator ? 'yes' : 'no'} · secure: ${window.isSecureContext}`,
+      `Hub: ${hub.connected ? hub.state.name + ' · ports ' + JSON.stringify(hub.state.ports) + ' · battery ' + hub.state.battery : 'not connected'}`,
+      `Page: ${location.href.split('#')[0]}`,
+      '', '--- console ---', ...lines
+    ].join('\n');
+  }
+  function openReport() {
+    const subject = encodeURIComponent(`[WeDo Makers] ${t('report_subject')}`);
+    const diag = diagnostics();
+    const body = encodeURIComponent(`${t('report_body_hint')}\n\n\n${diag}`.slice(0, 1800));
+    openModal(`<h3>${t('report_title')}</h3>
+      <p>${t('report_desc')}</p>
+      <p class="mailline"><b>${REPORT_EMAIL}</b></p>
+      <div class="actions" style="justify-content:flex-start;flex-wrap:wrap">
+        <a class="btn primary" href="mailto:${REPORT_EMAIL}?subject=${subject}&body=${body}">${t('report_mail')}</a>
+        <button class="btn" id="cpMail">${t('report_copy_mail')}</button>
+        <button class="btn" id="cpDiag">${t('report_copy_diag')}</button>
+      </div>
+      <p class="muted" style="margin-top:12px">${t('report_diag_note')}</p>
+      <pre style="max-height:180px">${esc(diag)}</pre>${closeBtn(t('close'))}`, (m) => {
+      m.querySelector('#cpMail').onclick = () => copy(REPORT_EMAIL);
+      m.querySelector('#cpDiag').onclick = () => copy(diag);
+    });
+  }
+  $('#btnReport').onclick = openReport;
 
   /* ---------- 콘솔 ---------- */
   let errCount = 0;
@@ -337,21 +362,23 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   function log(msg, kind) {
     const d = document.createElement('div');
     d.className = 'log ' + (kind || '');
-    const t = new Date();
-    d.innerHTML = `<span class="t">${t.toTimeString().slice(0, 8)}</span>${esc(msg)}`;
+    d.innerHTML = `<span class="t">${new Date().toTimeString().slice(0, 8)}</span>${esc(msg)}`;
+    if (kind === 'err') {
+      const a = document.createElement('button'); a.className = 'linkbtn'; a.textContent = t('report_btn'); a.onclick = openReport; d.appendChild(a);
+    }
     logs.appendChild(d);
     while (logs.children.length > 500) logs.firstChild.remove();
     const pane = $('#consolePane'); pane.scrollTop = pane.scrollHeight;
-    if (kind === 'err' && !$('#consolePane').classList.contains('on')) { errCount++; $('#errCnt').textContent = errCount; $('#errCnt').hidden = false; }
-    if (!kind && !$('#consolePane').classList.contains('on')) showTab('consolePane');
+    if (kind === 'err' && !pane.classList.contains('on')) { errCount++; $('#errCnt').textContent = errCount; $('#errCnt').hidden = false; }
+    if (!kind && !pane.classList.contains('on')) showTab('consolePane');
   }
   $('#btnClear').onclick = () => { logs.innerHTML = ''; };
   function showTab(id) {
-    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === id));
+    document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x.dataset.tab === id));
     document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('on', p.id === id));
     if (id === 'consolePane') { errCount = 0; $('#errCnt').hidden = true; }
   }
-  document.querySelectorAll('.tab').forEach((t) => (t.onclick = () => showTab(t.dataset.tab)));
+  document.querySelectorAll('.tab').forEach((x) => (x.onclick = () => showTab(x.dataset.tab)));
 
   /* ---------- 소리 (가상 허브) ---------- */
   let actx = null;
@@ -362,7 +389,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = 'square'; o.frequency.value = freq; g.gain.value = 0.05;
       o.connect(g).connect(actx.destination);
-      const t = actx.currentTime; o.start(t); g.gain.setValueAtTime(0.05, t + ms / 1000 - 0.02); g.gain.linearRampToValueAtTime(0, t + ms / 1000); o.stop(t + ms / 1000 + 0.01);
+      const tm = actx.currentTime; o.start(tm); g.gain.setValueAtTime(0.05, tm + ms / 1000 - 0.02); g.gain.linearRampToValueAtTime(0, tm + ms / 1000); o.stop(tm + ms / 1000 + 0.01);
     } catch (e) { /* 무시 */ }
   }
 
@@ -370,7 +397,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   const hub = new WeDo.Hub();
   const highlighted = new Set();
   const ui = {
-    log, beep,
+    log, beep, t,
     highlight(id, on) {
       if (on) highlighted.add(id); else highlighted.delete(id);
       try { ws.highlightBlock(id, on); } catch (e) { /* 블록이 지워짐 */ }
@@ -381,13 +408,14 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   rt.addEventListener('state', () => {
     document.body.classList.toggle('running', rt.running);
     $('#btnStop').disabled = !rt.running;
+    renderVars();
   });
 
   $('#btnRun').onclick = () => {
     ensureAudio();
     const code = genJS();
-    if (!hub.connected) toast('허브가 연결되지 않아 가상 허브로 실행합니다.', 2000);
-    log(`▶ "${$('#projName').value}" 실행` + (hub.connected ? '' : ' (가상 허브)'), 'sys');
+    if (!hub.connected) toast(t('run_sim_toast'), 2000);
+    log(`▶ "${$('#projName').value}" ${t('run_log')}` + (hub.connected ? '' : t('run_sim_suffix')), 'sys');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // 스페이스가 버튼을 누르지 않도록
     rt.run(code);
   };
@@ -398,77 +426,67 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
     if (hub.connected) { rt.stop('user'); hub.disconnect(); return; }
     const sup = WeDo.Hub.support();
     if (sup !== 'ok') { showBtHelp(sup); return; }
-    $('#connLabel').textContent = '연결 중…';
+    $('#connLabel').textContent = t('btn_connecting');
     try {
       await hub.connect();
-      log(`허브 연결됨: ${hub.state.name}`, 'sys'); toast('허브에 연결했습니다.');
+      log(`${t('connected_log')}: ${hub.state.name}`, 'sys'); toast(t('connected_toast'));
     } catch (e) {
       if (e && e.name === 'NotFoundError') { /* 사용자가 취소 */ }
       else if (e && (e.name === 'SecurityError' || /permission|policy|allowed/i.test(e.message))) showBtHelp('blocked', e);
-      else { log('연결 실패: ' + (e && e.message ? e.message : e), 'err'); toast('연결에 실패했습니다. 허브 버튼을 다시 누르고 시도하세요.'); }
+      else { log(`${t('connect_fail')} (${e && e.message ? e.message : e})`, 'err'); toast(t('connect_fail')); }
     }
     renderHub();
   };
-  hub.addEventListener('disconnected', () => { rt.stop('user'); log('허브 연결이 끊어졌습니다.', 'warn'); toast('허브 연결이 끊어졌습니다.'); });
+  hub.addEventListener('disconnected', () => { rt.stop('user'); log(t('disconnected'), 'warn'); toast(t('disconnected')); });
   function showBtHelp(kind, e) {
-    const why = {
-      unsupported: '이 브라우저는 Web Bluetooth를 지원하지 않습니다.',
-      insecure: '보안 연결(https)이 아닌 주소에서는 블루투스를 쓸 수 없습니다.',
-      blocked: '이 화면(미리보기/삽입된 페이지)에서는 브라우저가 블루투스 접근을 막고 있습니다.'
-    }[kind];
-    openModal(`<h3>블루투스로 허브에 연결할 수 없습니다</h3><p>${why}</p>
-      <ul><li>PC·크롬북의 <b>Chrome</b> 또는 <b>Edge</b>를 사용하세요.</li>
-      <li>배포한 <b>https</b> 주소(예: GitHub Pages)나 <code>http://localhost</code> 에서 페이지를 직접 여세요.</li>
-      <li>그동안에도 <b>가상 허브</b>로 프로그램을 실행해 볼 수 있습니다.</li></ul>
-      ${e ? `<p class="muted">(${esc(e.name)}: ${esc(e.message)})</p>` : ''}
-      <div class="actions"><button class="btn primary" id="mClose">확인</button></div>`, (m) => { m.querySelector('#mClose').onclick = closeModal; });
+    openModal(`<h3>${t('bt_title')}</h3><p>${t('bt_' + kind)}</p><ul>${t('bt_tips')}</ul>
+      ${e ? `<p class="muted">(${esc(e.name)}: ${esc(e.message)})</p>` : ''}${closeBtn()}`);
   }
 
   /* ---------- 허브 패널 ---------- */
   const GEAR = '<svg class="gear" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>';
-  let lastPortsKey = '';
+  const DEV_KEY = { 1: 'dev_motor', 34: 'dev_tilt', 35: 'dev_dist' };
   function renderPort(p) {
     const s = hub.state, type = s.ports[p], el = $('#port' + p);
-    const name = hub.connected ? (type ? (WeDo.DEV_NAME[type] || `장치 #${type}`) : '비어 있음') : '모터 (가상)';
-    const key = p + name;
+    const name = hub.connected ? (type ? (DEV_KEY[type] ? t(DEV_KEY[type]) : `${t('dev_unknown')} #${type}`) : t('dev_empty')) : t('dev_motor_sim');
+    const key = I18N.lang + p + name;
     if (el.dataset.key !== key) {
       el.dataset.key = key;
-      el.innerHTML = `<h4>포트 ${p} <span class="muted">${name}</span></h4><div class="motor-vis">${GEAR}<div><div class="val" data-pw>0</div><div class="meter"><i data-bar></i></div></div></div>`;
+      el.innerHTML = `<h4>${t('port')} ${p} <span class="muted">${esc(name)}</span></h4><div class="motor-vis">${GEAR}<div><div class="val" data-pw>0</div><div class="meter"><i data-bar></i></div></div></div>`;
     }
     const pw = s.motors[p].power;
     const pct = Math.round(Math.abs(pw) === 127 ? 0 : Math.abs(pw));
-    el.querySelector('[data-pw]').textContent = pw === 0 ? '정지' : `${pw > 0 ? '↻' : '↺'} ${pct}%`;
+    el.querySelector('[data-pw]').textContent = pw === 0 || Math.abs(pw) === 127 ? t('stopped') : `${pw > 0 ? '↻' : '↺'} ${pct}%`;
     el.querySelector('[data-bar]').style.width = pct + '%';
     const g = el.querySelector('.gear');
     g.classList.toggle('spin', pw !== 0 && Math.abs(pw) !== 127);
     g.classList.toggle('rev', pw < 0);
     g.style.setProperty('--spd', (2.2 - pct / 60).toFixed(2) + 's');
   }
-  const TILT_KO = { UP: '위쪽', DOWN: '아래쪽', LEFT: '왼쪽', RIGHT: '오른쪽' };
   function renderHub() {
     const s = hub.state, c = hub.connected;
     btnConnect.classList.toggle('on', c);
-    $('#connLabel').textContent = c ? '연결됨 · 끊기' : '허브 연결';
+    $('#connLabel').textContent = c ? t('btn_connected') : t('btn_connect');
     $('#modeChip').className = 'chip ' + (c ? 'real' : 'sim');
-    $('#modeChip').textContent = c ? '실제 허브' : '가상 허브';
-    $('#hubName').innerHTML = c ? `<b>${esc(s.name)}</b>` : '허브가 연결되지 않았습니다 — 가상 허브로 실행됩니다.';
+    $('#modeChip').textContent = c ? t('chip_real') : t('chip_sim');
+    $('#hubName').innerHTML = c ? `<b>${esc(s.name)}</b>` : esc(t('hub_none'));
     $('#battery').textContent = c && s.battery != null ? `🔋 ${s.battery}%` : '';
     renderPort(1); renderPort(2);
     const [r, g, b] = s.led, lit = r || g || b;
     $('#ledVis').style.background = lit ? `rgb(${r},${g},${b})` : '#20242c';
     $('#ledVis').style.boxShadow = lit ? `0 0 14px rgba(${r},${g},${b},.75)` : 'none';
-    $('#ledTxt').textContent = lit ? `RGB ${r}, ${g}, ${b}` : '꺼짐';
-    $('#toneTxt').textContent = s.tone ? `♪ ${s.tone} Hz` : '소리 없음';
-    $('#btnTxt').textContent = s.button ? '눌림' : '안 눌림';
+    $('#ledTxt').textContent = lit ? `RGB ${r}, ${g}, ${b}` : t('off');
+    $('#toneTxt').textContent = s.tone ? `♪ ${s.tone} Hz` : t('no_sound');
+    $('#btnTxt').textContent = s.button ? t('pressed') : t('released');
     $('#simBtn').classList.toggle('on', !!s.button);
-    $('#simBtn').disabled = c; $('#simBtn').textContent = c ? '허브의 버튼을 눌러 보세요' : '누르고 있기';
+    $('#simBtn').disabled = c; $('#simBtn').textContent = c ? t('press_real_btn') : t('hold_btn');
     $('#distTxt').textContent = Math.round(s.distance);
     const dSlider = $('#distSlider');
     dSlider.disabled = c; if (c || document.activeElement !== dSlider) dSlider.value = s.distance;
     const hasDist = !c || Object.values(s.ports).includes(WeDo.DEV.DISTANCE);
-    $('#distNote').textContent = c ? (hasDist ? '실제 센서 값' : '거리 센서가 연결되지 않았습니다') : '가상값 — 슬라이더로 바꿔 보세요';
+    $('#distNote').textContent = c ? (hasDist ? t('dist_real') : t('dist_missing')) : t('dist_sim');
     const dir = ['UP', 'DOWN', 'LEFT', 'RIGHT'].find((d) => hub.tiltAngle(d) >= 15);
-    $('#tiltTxt').textContent = dir ? `${TILT_KO[dir]} ${hub.tiltAngle(dir)}°` : '수평';
+    $('#tiltTxt').textContent = dir ? `${t('d_' + dir)} ${hub.tiltAngle(dir)}°` : t('level');
     document.querySelectorAll('#tiltPad button').forEach((bt) => {
       bt.disabled = c;
       bt.classList.toggle('on', (bt.dataset.d === 'NONE' && !dir) || bt.dataset.d === dir);
@@ -476,9 +494,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   }
   let rq = false;
   hub.addEventListener('change', () => { if (!rq) { rq = true; requestAnimationFrame(() => { rq = false; renderHub(); }); } });
-  renderHub();
 
-  // 가상 허브 조작
   $('#distSlider').oninput = (e) => { if (!hub.connected) { hub.state.distance = Number(e.target.value); hub.emit(); } };
   document.querySelectorAll('#tiltPad button').forEach((bt) => (bt.onclick = () => { if (!hub.connected) hub.simSetTilt(bt.dataset.d, 30); }));
   const sb = $('#simBtn');
@@ -486,31 +502,34 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   sb.addEventListener('pointerdown', press(true));
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => sb.addEventListener(ev, press(false)));
 
-  /* ---------- 스플리터 ---------- */
-  (function () {
-    const sp = $('#splitter'); let drag = false;
-    try { const w = localStorage.getItem('wedo2-side-w'); if (w) document.documentElement.style.setProperty('--side-w', w); } catch (e) {}
-    sp.addEventListener('pointerdown', (e) => { drag = true; sp.classList.add('drag'); sp.setPointerCapture(e.pointerId); });
-    sp.addEventListener('pointermove', (e) => {
-      if (!drag) return;
-      const w = Math.max(300, Math.min(window.innerWidth * 0.7, window.innerWidth - e.clientX));
-      document.documentElement.style.setProperty('--side-w', w + 'px'); Blockly.svgResize(ws);
-    });
-    sp.addEventListener('pointerup', () => {
-      drag = false; sp.classList.remove('drag');
-      try { localStorage.setItem('wedo2-side-w', getComputedStyle(document.documentElement).getPropertyValue('--side-w')); } catch (e) {}
-    });
-    window.addEventListener('resize', () => Blockly.svgResize(ws));
-  })();
-
-  // 단축키: Ctrl+Enter 실행, Esc 정지
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('#btnRun').click(); }
-    else if (e.key === 'Escape' && rt.running && !modalBg.classList.contains('on')) rt.stop('user');
-  });
+  /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
+  const vm = $('#varMon');
+  function fmt(v) {
+    if (v === undefined || v === null) return '–';
+    if (typeof v === 'number') return String(Math.round(v * 1000) / 1000);
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    return String(v);
+  }
+  function renderVars() {
+    if (!ws) return;
+    const names = ws.getAllVariables().map((v) => v.name);
+    vm.hidden = names.length === 0;
+    if (!names.length) return;
+    let vals = {};
+    try { vals = rt.vars ? rt.vars() : {}; } catch (e) { vals = {}; }
+    const html = names.map((nm) => `<div class="vm-row"><span class="vm-name">${esc(nm)}</span><span class="vm-val">${esc(fmt(vals[nm]))}</span></div>`).join('');
+    const list = $('#vmList');
+    if (list.innerHTML !== html) list.innerHTML = html;
+  }
+  setInterval(() => { if (rt.running) renderVars(); }, 100);
+  $('#vmFold').onclick = () => {
+    vm.classList.toggle('folded');
+    $('#vmFold').textContent = vm.classList.contains('folded') ? '+' : '−';
+    try { localStorage.setItem('wedomakers-vm-folded', vm.classList.contains('folded') ? '1' : ''); } catch (e) {}
+  };
+  try { if (localStorage.getItem('wedomakers-vm-folded')) { vm.classList.add('folded'); $('#vmFold').textContent = '+'; } } catch (e) {}
 
   /* ---------- PC 키보드 → 신호 ---------- */
-  // e.code 를 써서 한/영 입력 상태와 관계없이 같은 키로 인식
   function keyName(e) {
     const c = e.code || '';
     if (c === 'Space') return 'space';
@@ -533,31 +552,81 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
     if (rt.running && !typing(e.target)) e.preventDefault();
   }, true);
   window.addEventListener('blur', () => rt.clearKeys());
-  const KEY_KO = Object.fromEntries(window.WEDO_KEYS);
-  rt.addEventListener('keys', () => {
-    const down = [...rt.keys].map((k) => KEY_KO[k] || k);
-    $('#keyTxt').textContent = down.length ? down.join(' + ') : (rt.lastKey ? `마지막: ${KEY_KO[rt.lastKey] || rt.lastKey}` : '없음');
+  function renderKeys() {
+    const label = (k) => (Object.fromEntries(window.WEDO_KEYS)[k] || k);
+    const down = [...rt.keys].map(label);
+    $('#keyTxt').textContent = down.length ? down.join(' + ') : (rt.lastKey ? `${t('last')}: ${label(rt.lastKey)}` : t('none'));
     $('#keyVis').classList.toggle('on', down.length > 0);
+  }
+  rt.addEventListener('keys', renderKeys);
+
+  // 단축키: Ctrl+Enter 실행, Esc 정지
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); $('#btnRun').click(); }
+    else if (e.key === 'Escape' && rt.running && !modalBg.classList.contains('on')) rt.stop('user');
   });
 
-  /* ---------- 변수 모니터 ---------- */
-  function renderVars() {
-    const box = $('#varList');
-    const names = ws.getAllVariables().map((v) => v.name);
-    if (!names.length) { box.innerHTML = '<span class="muted">변수 분류에서 변수를 만들면 실행 중 값이 여기 보입니다.</span>'; return; }
-    let vals = {};
-    try { vals = rt.vars ? rt.vars() : {}; } catch (e) { vals = {}; }
-    box.innerHTML = names.map((nm) => {
-      const v = vals[nm];
-      const shown = v === undefined || v === null ? '–' : typeof v === 'number' ? String(Math.round(v * 1000) / 1000) : String(v);
-      return `<span class="var"><b>${esc(nm)}</b>${esc(shown)}</span>`;
-    }).join('');
+  /* ---------- 창 크기 조절: 좌우(블록 | 오른쪽 패널) + 위아래(Python | 허브·콘솔) ---------- */
+  function makeSplitter(el, onMove, storeKey, cssVar) {
+    let drag = false;
+    try { const v = localStorage.getItem(storeKey); if (v) document.documentElement.style.setProperty(cssVar, v); } catch (e) {}
+    el.addEventListener('pointerdown', (e) => { drag = true; el.classList.add('drag'); document.body.classList.add('resizing'); el.setPointerCapture(e.pointerId); e.preventDefault(); });
+    el.addEventListener('pointermove', (e) => { if (drag) { onMove(e); if (ws) Blockly.svgResize(ws); } });
+    const end = () => {
+      if (!drag) return;
+      drag = false; el.classList.remove('drag'); document.body.classList.remove('resizing');
+      try { localStorage.setItem(storeKey, getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim()); } catch (e) {}
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    el.addEventListener('dblclick', () => { document.documentElement.style.removeProperty(cssVar); try { localStorage.removeItem(storeKey); } catch (e) {} if (ws) Blockly.svgResize(ws); });
   }
-  setInterval(() => { if (rt.running || $('#varList').dataset.dirty) { renderVars(); delete $('#varList').dataset.dirty; } }, 200);
-  ws.addChangeListener((e) => { if (e.type === Blockly.Events.VAR_CREATE || e.type === Blockly.Events.VAR_DELETE || e.type === Blockly.Events.VAR_RENAME || e.type === Blockly.Events.FINISHED_LOADING) $('#varList').dataset.dirty = '1'; });
-  rt.addEventListener('state', () => { $('#varList').dataset.dirty = '1'; });
-  renderVars();
+  makeSplitter($('#splitter'), (e) => {
+    const w = Math.max(300, Math.min(window.innerWidth * 0.7, window.innerWidth - e.clientX));
+    document.documentElement.style.setProperty('--side-w', w + 'px');
+  }, 'wedo2-side-w', '--side-w');
+  makeSplitter($('#vsplit'), (e) => {
+    const box = $('aside').getBoundingClientRect();
+    const h = Math.max(90, Math.min(box.height - 120, e.clientY - box.top));
+    document.documentElement.style.setProperty('--py-h', Math.round(h / box.height * 1000) / 10 + '%');
+  }, 'wedomakers-py-h', '--py-h');
+  window.addEventListener('resize', () => ws && Blockly.svgResize(ws));
 
-  window.__wedo = { ws, hub, rt, genJS, genPython };
-  log('위두 메이커스 준비 완료. 블록을 연결하고 ▶ 실행을 눌러 보세요.', 'sys');
+  /* ---------- 언어 ---------- */
+  const langSel = $('#langSel');
+  langSel.innerHTML = I18N.LANGS.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
+  function applyStaticText() {
+    document.documentElement.lang = I18N.lang === 'zh' ? 'zh-Hans' : I18N.lang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); el.setAttribute('aria-label', el.title); });
+    document.title = `${t('app_name')} — ${t('app_sub')}`;
+    langSel.value = I18N.lang;
+  }
+  function setLanguage(lang, first) {
+    const state = ws ? Blockly.serialization.workspaces.save(ws) : null;
+    I18N.set(lang);
+    applyBlocklyMessages(lang);
+    window.WEDO_GEN.defineBlocks();
+    applyStaticText();
+    if (!first) {
+      // 프로젝트 이름이 기본 이름(예제·새 프로젝트)이면 새 언어로 바꿔 준다
+      const nm = $('#projName').value;
+      ['proj_example', 'proj_new', 'proj_default'].forEach((k) => { if (I18N.all(k).includes(nm)) $('#projName').value = t(k); });
+      createWorkspace(state);
+      refreshCode(); renderHub(); renderKeys(); renderVars(); autosave();
+    }
+  }
+  langSel.onchange = () => { rt.stop('user'); setLanguage(langSel.value); };
+
+  /* ---------- 시작 ---------- */
+  setLanguage(I18N.lang, true);
+  (function initLoad() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
+    if (saved && saved.workspace) loadProject(saved);
+    else loadProject(example(), t('proj_example'));
+  })();
+  renderHub(); renderKeys(); renderVars();
+
+  window.__wedo = { get ws() { return ws; }, hub, rt, genJS, genPython, setLanguage };
+  log(t('ready'), 'sys');
 })();
