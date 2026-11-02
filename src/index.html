@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>위두 메이커스 — WeDo 2.0 워드블럭 + Python</title>
+<link rel="icon" type="image/png" href="__FAVICON__">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --ink:#1d2433; --ink2:#5b6476; --line:#e2e7ef;
+  --brand:#2e6abf; --blue:#1e88e5; --ok:#19a463; --warn:#f29d0c; --err:#d93025;
+  --code-bg:#0f1624; --code-ink:#dfe6f1;
+  --side-w:440px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:14px}
+button{font:inherit;cursor:pointer}
+#app{display:flex;flex-direction:column;height:100vh}
+
+/* ---------- 헤더 ---------- */
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;margin-right:6px}
+.brand-logo{width:36px;height:36px;display:block}
+.brand b{font-weight:800;font-size:16px;letter-spacing:-.3px}
+.brand small{display:block;color:var(--ink2);font-size:11px;margin-top:-2px}
+#projName{border:1px solid transparent;background:transparent;font:inherit;font-weight:600;padding:6px 8px;border-radius:8px;min-width:150px;color:var(--ink)}
+#projName:hover,#projName:focus{border-color:var(--line);background:#fff;outline:none}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;border-radius:9px;font-weight:600;white-space:nowrap}
+.btn:hover{background:#f1f4f9}
+.btn svg{width:16px;height:16px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:#eef2f7}
+.sep{width:1px;height:26px;background:var(--line);margin:0 4px}
+#btnConnect{border-color:#cfd8e6}
+#btnConnect .dot{width:9px;height:9px;border-radius:50%;background:#b8c0cc}
+#btnConnect.on{background:#e8f7ef;border-color:#a8dcc0;color:#0b6b3d}
+#btnConnect.on .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(25,164,99,.2)}
+#btnRun{background:var(--ok);border-color:var(--ok);color:#fff;padding:7px 16px}
+#btnRun:hover{filter:brightness(1.05)}
+#btnStop{background:#fff;color:var(--err);border-color:#f2c4c0}
+#btnStop:disabled{opacity:.45;cursor:default}
+body.running #btnRun{opacity:.85}
+
+/* ---------- 메인 ---------- */
+main{flex:1;display:flex;min-height:0}
+#blockWrap{flex:1;position:relative;min-width:300px}
+#blockArea{position:absolute;inset:0}
+.zoom{position:absolute;right:16px;bottom:18px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zoom button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;box-shadow:0 2px 6px rgba(20,30,50,.08);font-size:18px;font-weight:700;color:var(--ink2)}
+.zoom button:hover{color:var(--ink)}
+#splitter{width:6px;cursor:col-resize;background:transparent;border-left:1px solid var(--line);flex:none}
+#splitter:hover,#splitter.drag{background:#dbe4f0}
+aside{width:var(--side-w);flex:none;display:flex;flex-direction:column;background:var(--panel);min-width:300px;max-width:70vw}
+
+/* Python 코드 */
+.py{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--code-bg)}
+.py-head{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;color:#c9d3e3;border-bottom:1px solid #1e2a3d}
+.py-head .title{display:flex;align-items:center;gap:8px;font-weight:700;color:#fff}
+.py-logo{width:18px;height:18px}
+.py-head .badge{font-size:11px;padding:2px 7px;border-radius:99px;background:#1d2a40;color:#8fb2e8;font-weight:600}
+.py-head .btn{background:#1a2538;border-color:#273650;color:#d4ddeb;padding:5px 9px;font-size:12.5px}
+.py-head .btn:hover{background:#22304a}
+#pyCode{flex:1;overflow:auto;margin:0;padding:12px 0;font:13px/1.65 "JetBrains Mono",ui-monospace,Consolas,monospace;color:var(--code-ink);counter-reset:ln;tab-size:4}
+#pyCode .l{display:block;padding:0 14px 0 0;white-space:pre}
+#pyCode .l:before{counter-increment:ln;content:counter(ln);display:inline-block;width:38px;margin-right:14px;text-align:right;color:#46536a;user-select:none}
+.tk-k{color:#ff7ab2}.tk-s{color:#a5e07b}.tk-n{color:#f7b267}.tk-c{color:#6b7a93;font-style:italic}
+.tk-f{color:#71c6ff}.tk-d{color:#ffd166}.tk-b{color:#c79bff}.tk-cn{color:#7fe0d0}
+
+/* 하단 탭 */
+.bottom{flex:1;display:flex;flex-direction:column;min-height:240px;border-top:1px solid var(--line)}
+.tabs{display:flex;gap:2px;padding:6px 8px 0;border-bottom:1px solid var(--line);background:#fafbfd}
+.tab{border:0;background:transparent;padding:8px 12px;border-radius:8px 8px 0 0;color:var(--ink2);font-weight:600;position:relative}
+.tab.on{color:var(--ink);background:#fff;box-shadow:0 -1px 0 var(--line),1px 0 0 var(--line),-1px 0 0 var(--line)}
+.tab .cnt[hidden]{display:none}
+.tab .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--err);color:#fff;font-size:11px;line-height:18px;text-align:center}
+.pane{flex:1;overflow:auto;display:none}
+.pane.on{display:block}
+
+/* 허브 패널 */
+#hubPane{padding:12px 14px}
+.hub-status{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--ink2)}
+.hub-status b{color:var(--ink)}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
+.chip.sim{background:#fff3dc;color:#8a5a00}
+.chip.real{background:#e3f6ec;color:#0b6b3d}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{border:1px solid var(--line);border-radius:12px;padding:8px 11px;background:#fff}
+.card h4{margin:0 0 6px;font-size:12px;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between}
+.card .val{font-size:15px;font-weight:700}
+.motor-vis{display:flex;align-items:center;gap:10px}
+.gear{width:30px;height:30px;color:var(--blue)}
+.gear.spin{animation:spin var(--spd,1s) linear infinite}
+.gear.rev{animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.led{width:30px;height:30px;border-radius:50%;border:2px solid #dfe4ec;background:#20242c}
+.meter{height:8px;border-radius:5px;background:#edf1f6;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--blue);width:0;transition:width .15s}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.tiltpad{display:grid;grid-template-columns:repeat(3,30px);grid-template-rows:repeat(3,30px);gap:3px;justify-content:center}
+.tiltpad button{border:1px solid var(--line);background:#f6f8fb;border-radius:7px;font-size:13px;padding:0;color:var(--ink2)}
+.tiltpad button.on{background:var(--sensor,#2bb3d9);border-color:#2bb3d9;color:#fff}
+.tiltpad .c{grid-column:2;grid-row:2}.tiltpad .u{grid-column:2;grid-row:1}.tiltpad .d{grid-column:2;grid-row:3}.tiltpad .lft{grid-column:1;grid-row:2}.tiltpad .r{grid-column:3;grid-row:2}
+#simBtn{width:100%;padding:8px;border-radius:9px;border:1px solid #a8dcc0;background:#e8f7ef;color:#0b6b3d;font-weight:700;user-select:none;touch-action:none}
+#simBtn.on{background:var(--ok);color:#fff}
+.muted{color:var(--ink2);font-size:12px}
+.keyvis{height:30px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:#f6f8fb;color:var(--ink2);font-size:12.5px;font-weight:600;transition:.1s}
+.keyvis.on{background:#e0703a;border-color:#e0703a;color:#fff}
+#varList{display:flex;flex-wrap:wrap;gap:6px}
+.var{display:inline-flex;gap:6px;align-items:center;padding:3px 8px;border-radius:7px;background:#fff2e8;color:#7a3a00;font:600 12.5px "JetBrains Mono",monospace}
+.var b{font-family:"Noto Sans KR",sans-serif;color:#b45309}
+
+/* 콘솔 */
+#consolePane{font:12.5px/1.6 "JetBrains Mono",ui-monospace,monospace;padding:8px 0}
+.log{padding:1px 14px;border-bottom:1px dashed #f0f2f6;white-space:pre-wrap;word-break:break-all}
+.log .t{color:#9aa4b5;margin-right:8px}
+.log.sys{color:var(--ink2)}.log.err{color:var(--err);background:#fff5f4}.log.warn{color:#9a6200;background:#fffaf0}
+.console-tools{position:sticky;top:0;display:flex;justify-content:flex-end;padding:0 8px;background:linear-gradient(#fff,rgba(255,255,255,0))}
+
+/* 모달 / 토스트 */
+.modal-bg{position:fixed;inset:0;background:rgba(15,22,36,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 10px;font-size:18px}
+.modal p,.modal li{line-height:1.65;color:#2d3546}
+.modal pre{background:var(--code-bg);color:var(--code-ink);padding:10px 12px;border-radius:10px;overflow:auto;font:12.5px/1.55 "JetBrains Mono",monospace}
+.modal code{background:#eef2f7;padding:1px 5px;border-radius:5px;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+.modal pre code{background:none;padding:0}
+.modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.modal input[type=text]{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font:inherit}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1d2433;color:#fff;padding:10px 16px;border-radius:10px;transition:.25s;z-index:200;pointer-events:none;max-width:90vw}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Blockly 미세 조정 */
+.blocklyToolboxDiv{border-right:1px solid var(--line)}
+.blocklyTreeRow{margin:2px 0 !important}
+.blocklyTreeLabel{font-family:"Noto Sans KR",sans-serif !important;font-weight:600}
+
+@media (max-width:860px){
+  main{flex-direction:column}
+  #splitter{display:none}
+  aside{width:auto;max-width:none;height:48vh}
+  #blockWrap{min-height:52vh}
+  .brand small,#projName{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><img class="brand-logo" src="__LOGO__" alt="위두 메이커스 로고"><div><b>위두 메이커스</b><small>WeDo 2.0 워드블럭 + Python</small></div></div>
+    <input id="projName" value="내 WeDo 프로젝트" aria-label="프로젝트 이름">
+    <button class="btn ghost" id="btnNew" title="새 프로젝트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg>새로</button>
+    <button class="btn ghost" id="btnOpen" title="프로젝트 열기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>열기</button>
+    <button class="btn ghost" id="btnSave" title="프로젝트 저장 (.wedo.json)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>저장</button>
+    <input type="file" id="fileIn" accept=".json,.wedo,.wedo.json" hidden>
+    <div class="spacer"></div>
+    <button class="btn" id="btnConnect"><span class="dot"></span><span id="connLabel">허브 연결</span></button>
+    <div class="sep"></div>
+    <button class="btn" id="btnRun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>실행</button>
+    <button class="btn" id="btnStop" disabled><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>정지</button>
+    <button class="btn ghost" id="btnHelp" title="도움말">?</button>
+  </header>
+
+  <main>
+    <div id="blockWrap">
+      <div id="blockArea"></div>
+      <div class="zoom">
+        <button id="zIn" title="확대">+</button>
+        <button id="zOut" title="축소">−</button>
+        <button id="zFit" title="화면에 맞추기" style="font-size:14px">⤢</button>
+      </div>
+    </div>
+    <div id="splitter" title="드래그해서 너비 조절"></div>
+    <aside>
+      <section class="py">
+        <div class="py-head">
+          <div class="title">
+            <svg class="py-logo" viewBox="0 0 24 24"><path fill="#4b8bbe" d="M11.9 2C6.8 2 7.1 4.2 7.1 4.2v2.3h4.9v.7H5.2S2 6.8 2 12s2.8 5 2.8 5h1.7v-2.4s-.1-2.8 2.8-2.8h4.8s2.7 0 2.7-2.6V4.8S17.2 2 11.9 2zM9.2 3.6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8z"/><path fill="#ffd43b" d="M12.1 22c5.1 0 4.8-2.2 4.8-2.2v-2.3H12v-.7h6.8S22 17.2 22 12s-2.8-5-2.8-5h-1.7v2.4s.1 2.8-2.8 2.8H9.9s-2.7 0-2.7 2.6v4.4S6.8 22 12.1 22zm2.7-1.6a.9.9 0 1 1 0-1.8.9.9 0 0 1 0 1.8z"/></svg>
+            Python 코드 <span class="badge">자동 생성</span>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn" id="btnCopyPy">복사</button>
+          <button class="btn" id="btnSavePy">.py 저장</button>
+          <button class="btn" id="btnPyHelp">PC에서 실행</button>
+        </div>
+        <pre id="pyCode"></pre>
+      </section>
+      <section class="bottom">
+        <div class="tabs">
+          <button class="tab on" data-tab="hubPane">허브</button>
+          <button class="tab" data-tab="consolePane">콘솔<span class="cnt" id="errCnt" hidden>0</span></button>
+        </div>
+        <div class="pane on" id="hubPane">
+          <div class="hub-status"><span id="modeChip" class="chip sim">가상 허브</span><span id="hubName">허브가 연결되지 않았습니다 — 가상 허브로 실행됩니다.</span><span class="spacer"></span><span id="battery"></span></div>
+          <div class="grid2">
+            <div class="card" id="port1"></div>
+            <div class="card" id="port2"></div>
+            <div class="card">
+              <h4>허브 불빛 <span id="ledTxt" class="muted">꺼짐</span></h4>
+              <div class="motor-vis"><div class="led" id="ledVis"></div><div class="muted" id="toneTxt">소리 없음</div></div>
+            </div>
+            <div class="card">
+              <h4>허브 버튼 <span id="btnTxt" class="muted">안 눌림</span></h4>
+              <button id="simBtn">누르고 있기</button>
+            </div>
+            <div class="card">
+              <h4>거리 센서 <span class="val" id="distTxt">50</span></h4>
+              <input type="range" id="distSlider" min="0" max="100" value="50">
+              <div class="muted" id="distNote">가상값 — 슬라이더로 바꿔 보세요</div>
+            </div>
+            <div class="card">
+              <h4>기울기 센서 <span class="val" id="tiltTxt">수평</span></h4>
+              <div class="tiltpad" id="tiltPad">
+                <button class="u" data-d="UP">▲</button><button class="lft" data-d="LEFT">◀</button>
+                <button class="c on" data-d="NONE">●</button><button class="r" data-d="RIGHT">▶</button><button class="d" data-d="DOWN">▼</button>
+              </div>
+            </div>
+            <div class="card">
+              <h4>PC 키보드 <span class="muted" id="keyTxt">없음</span></h4>
+              <div class="keyvis" id="keyVis">키를 눌러 보세요</div>
+            </div>
+            <div class="card">
+              <h4>변수</h4>
+              <div id="varList"></div>
+            </div>
+          </div>
+        </div>
+        <div class="pane" id="consolePane">
+          <div class="console-tools"><button class="btn ghost" id="btnClear" style="font-size:12px;padding:4px 8px">지우기</button></div>
+          <div id="logs"></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+
+<script>/*__BLOCKLY__*/</script>
+<script>window.WEDO2_PY = /*__WEDO2PY__*/;</script>
+<script>/*__BLOCKS__*/</script>
+<script>/*__HUB__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>
