@@ -195,6 +195,7 @@
       this.handlers = { start: [], button: [], when: [], key: [] };
       this.active = new Set(); this.hlMap = new Map();
       this.keys = new Set(); this.lastKey = '';
+      this.cam = null; // AI 카메라 (app.js 에서 연결)
     }
     check() { if (!this.running) throw new StopSignal(); }
     // 반복 한 바퀴마다 한 프레임(1/30초) 쉬기 — Scratch 와 같은 속도로 "점점 빨라지기" 같은 동작이 보이도록

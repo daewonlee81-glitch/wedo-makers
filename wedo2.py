@@ -2,7 +2,9 @@
 wedo2.py — LEGO WeDo 2.0 허브를 Python 으로 제어하는 라이브러리
 (위두 메이커스에서 생성한 Python 코드를 그대로 실행하기 위한 짝 라이브러리)
 
-필요: Python 3.9+, `pip install bleak`  (키보드 블록을 쓰면 `pip install pynput` 도)
+필요: Python 3.9+, `pip install bleak`
+     키보드 블록을 쓰면 `pip install pynput`
+     AI 카메라 블록을 쓰면 `pip install mediapipe opencv-python`
 사용 예:
 
     from wedo2 import *
@@ -32,12 +34,18 @@ __all__ = [
     "wait", "wait_until", "stop_all",
     "ALL", "CLOCKWISE", "COUNTERCLOCKWISE", "UP", "DOWN", "LEFT", "RIGHT", "ANY",
     "RED", "ORANGE", "YELLOW", "GREEN", "CYAN", "BLUE", "PURPLE", "PINK", "WHITE",
+    # AI 카메라
+    "BOTH", "is_person_seen", "is_arm_up", "body_x", "body_y", "elbow_angle", "shoulder_tilt",
+    "is_hand_seen", "is_gesture", "finger_count", "hand_x", "hand_y",
+    "is_object_seen", "object_x", "object_y", "object_count",
+    "is_color_seen", "color_x", "color_y", "color_size",
 ]
 
 # ---------------------------------------------------------------- 상수
 ALL = 0
 CLOCKWISE, COUNTERCLOCKWISE = 1, -1
 UP, DOWN, LEFT, RIGHT, ANY = "UP", "DOWN", "LEFT", "RIGHT", "ANY"
+BOTH = "BOTH"
 RED = (255, 0, 0)
 ORANGE = (255, 70, 0)
 YELLOW = (255, 190, 0)
@@ -363,6 +371,364 @@ def stop_all():
     raise _Stopped()
 
 
+
+# ---------------------------------------------------------------- AI 카메라 (mediapipe + opencv)
+# 웹의 위두 메이커스와 같은 규칙: 거울 화면 기준 x 0(왼쪽)~100(오른쪽), y 0(아래)~100(위), 안 보이면 -1
+_MODEL_URLS = {
+    "pose": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+    "hand": "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+    "object": "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite",
+}
+_BODY = {"NOSE": 0, "LEFT_SHOULDER": 11, "RIGHT_SHOULDER": 12, "LEFT_ELBOW": 13, "RIGHT_ELBOW": 14,
+         "LEFT_WRIST": 15, "RIGHT_WRIST": 16, "LEFT_HIP": 23, "RIGHT_HIP": 24, "LEFT_KNEE": 25,
+         "RIGHT_KNEE": 26, "LEFT_ANKLE": 27, "RIGHT_ANKLE": 28}
+_POSE_LINES = [(11, 12), (11, 13), (13, 15), (12, 14), (14, 16), (11, 23), (12, 24), (23, 24),
+               (23, 25), (25, 27), (24, 26), (26, 28)]
+_HAND_LINES = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8), (5, 9), (9, 10), (10, 11),
+               (11, 12), (9, 13), (13, 14), (14, 15), (15, 16), (13, 17), (17, 18), (18, 19), (19, 20), (0, 17)]
+_COLOR_RULES = {  # H 0~360, S·V 0~1
+    "red": lambda h, s, v: ((h < 15) | (h > 340)) & (s > 0.5) & (v > 0.3),
+    "green": lambda h, s, v: (h > 85) & (h < 160) & (s > 0.4) & (v > 0.25),
+    "blue": lambda h, s, v: (h > 195) & (h < 255) & (s > 0.45) & (v > 0.25),
+    "yellow": lambda h, s, v: (h > 42) & (h < 68) & (s > 0.45) & (v > 0.45),
+}
+
+
+class _Camera:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.cap = None
+        self.tasks = {}
+        self.want = set()
+        self.pose = None
+        self.hand = None      # (landmarks, gesture)
+        self.objects = []     # dict(name, x, y, score, box)
+        self.colors = {}
+        self.view = None
+        self.thread = None
+        self.closed = False
+        self.done = set()   # 한 번 이상 처리된 기능
+
+    # --- 준비 ---
+    def _libs(self):
+        try:
+            import cv2  # noqa: F401
+            import mediapipe  # noqa: F401
+        except ImportError:
+            raise SystemExit("AI 카메라 블록을 쓰려면  pip install mediapipe opencv-python  을 먼저 실행하세요.")
+
+    def _model(self, mode):
+        import os
+        import urllib.request
+        folder = os.path.join(os.path.expanduser("~"), ".wedo2_models")
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, _MODEL_URLS[mode].rsplit("/", 1)[1])
+        if not os.path.exists(path):
+            print(f"AI 모델 받는 중… ({mode})")
+            urllib.request.urlretrieve(_MODEL_URLS[mode], path + ".part")
+            os.replace(path + ".part", path)
+        return path
+
+    def need(self, mode):
+        if mode in self.want or self.closed:
+            return
+        self._libs()
+        with self.lock:
+            if mode in self.want:
+                return
+            import cv2
+            from mediapipe.tasks import python as mpt
+            from mediapipe.tasks.python import vision
+            if self.cap is None:
+                self.cap = cv2.VideoCapture(0)
+                if not self.cap.isOpened():
+                    raise RuntimeError("카메라를 열 수 없습니다.")
+            if mode != "color":
+                base = mpt.BaseOptions(model_asset_path=self._model(mode))
+                video = vision.RunningMode.VIDEO
+                if mode == "pose":
+                    self.tasks[mode] = vision.PoseLandmarker.create_from_options(
+                        vision.PoseLandmarkerOptions(base_options=base, running_mode=video, num_poses=1))
+                elif mode == "hand":
+                    self.tasks[mode] = vision.GestureRecognizer.create_from_options(
+                        vision.GestureRecognizerOptions(base_options=base, running_mode=video, num_hands=1))
+                else:
+                    self.tasks[mode] = vision.ObjectDetector.create_from_options(
+                        vision.ObjectDetectorOptions(base_options=base, running_mode=video,
+                                                     score_threshold=0.4, max_results=8))
+            self.want.add(mode)
+            if self.thread is None:
+                self.thread = threading.Thread(target=self._loop, daemon=True)
+                self.thread.start()
+        # 이 기능의 첫 결과가 나올 때까지 기다린다 (최대 5초)
+        end = time.monotonic() + 5
+        while mode not in self.done and time.monotonic() < end and not self.closed:
+            time.sleep(0.02)
+
+    # --- 매 프레임 ---
+    def _loop(self):
+        import cv2
+        import numpy as np
+        import mediapipe as mp
+        turn = 0
+        last_ts = 0
+        while not self.closed:
+            ok, frame = self.cap.read()
+            if not ok:
+                time.sleep(0.02)
+                continue
+            ts = max(last_ts + 1, int(time.monotonic() * 1000))
+            last_ts = ts
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            heavy = [m for m in ("pose", "hand", "object") if m in self.want]
+            pick = heavy[turn % len(heavy)] if heavy else None
+            turn += 1
+            try:
+                if pick == "pose":
+                    r = self.tasks["pose"].detect_for_video(image, ts)
+                    self.pose = r.pose_landmarks[0] if r.pose_landmarks else None
+                    self.done.add("pose")
+                elif pick == "hand":
+                    r = self.tasks["hand"].recognize_for_video(image, ts)
+                    if r.hand_landmarks:
+                        g = r.gestures[0][0].category_name if r.gestures and r.gestures[0] else "None"
+                        self.hand = (r.hand_landmarks[0], g)
+                    else:
+                        self.hand = None
+                    self.done.add("hand")
+                elif pick == "object":
+                    r = self.tasks["object"].detect_for_video(image, ts)
+                    h, w = frame.shape[:2]
+                    objs = []
+                    for d in r.detections:
+                        b, c = d.bounding_box, d.categories[0]
+                        cx, cy = (b.origin_x + b.width / 2) / w, (b.origin_y + b.height / 2) / h
+                        objs.append({"name": c.category_name, "score": c.score,
+                                     "x": round((1 - cx) * 100, 1), "y": round((1 - cy) * 100, 1),
+                                     "box": (b.origin_x, b.origin_y, b.width, b.height)})
+                    self.objects = objs
+                    self.done.add("object")
+            except Exception:  # noqa: BLE001
+                pass
+            if "color" in self.want:
+                small = cv2.flip(cv2.resize(frame, (80, 60)), 1)
+                hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV).astype(np.float32)
+                H, S, V = hsv[..., 0] * 2, hsv[..., 1] / 255, hsv[..., 2] / 255
+                ys, xs = np.mgrid[0:60, 0:80]
+                out = {}
+                for k, rule in _COLOR_RULES.items():
+                    m = rule(H, S, V)
+                    n = int(m.sum())
+                    size = round(n / 4800 * 100, 1)
+                    if size >= 1.5:
+                        out[k] = {"seen": True, "x": round(xs[m].mean() / 79 * 100, 1),
+                                  "y": round(100 - ys[m].mean() / 59 * 100, 1), "size": size}
+                    else:
+                        out[k] = {"seen": False, "x": -1, "y": -1, "size": size}
+                self.colors = out
+                self.done.add("color")
+            self.view = self._draw(frame)
+
+    def _draw(self, frame):
+        import cv2
+        h, w = frame.shape[:2]
+        img = cv2.flip(frame, 1)
+        P = lambda lm: (int((1 - lm.x) * w), int(lm.y * h))  # noqa: E731
+        if self.pose:
+            for a, b in _POSE_LINES:
+                if self.pose[a].visibility > 0.4 and self.pose[b].visibility > 0.4:
+                    cv2.line(img, P(self.pose[a]), P(self.pose[b]), (255, 229, 0), 3)
+            for i in _BODY.values():
+                if self.pose[i].visibility > 0.4:
+                    cv2.circle(img, P(self.pose[i]), 5, (255, 255, 255), -1)
+        if self.hand:
+            lm = self.hand[0]
+            for a, b in _HAND_LINES:
+                cv2.line(img, P(lm[a]), P(lm[b]), (10, 214, 255), 2)
+            cv2.putText(img, self.hand[1], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (10, 214, 255), 2)
+        for o in self.objects:
+            x, y, bw, bh = o["box"]
+            x = w - x - bw
+            cv2.rectangle(img, (int(x), int(y)), (int(x + bw), int(y + bh)), (88, 209, 48), 2)
+            cv2.putText(img, f'{o["name"]} {int(o["score"] * 100)}%', (int(x), int(y) - 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (88, 209, 48), 2)
+        for k, c in self.colors.items():
+            if c["seen"]:
+                cv2.circle(img, (int(c["x"] / 100 * w), int((1 - c["y"] / 100) * h)), 12, (255, 255, 255), 3)
+        return img
+
+    def show(self):
+        """메인 스레드에서 부른다 (macOS 는 창을 메인 스레드에서만 그릴 수 있음)."""
+        if self.view is None or self.closed:
+            return
+        import cv2
+        cv2.imshow("WeDo Makers - AI Camera (Q: close)", self.view)
+        if cv2.waitKey(1) & 0xFF in (ord("q"), ord("Q")):
+            self.close()
+            _running.clear()
+
+    def close(self):
+        self.closed = True
+        if self.thread is not None:
+            self.thread.join(timeout=1)
+        for task in self.tasks.values():
+            try:
+                task.close()
+            except Exception:  # noqa: BLE001
+                pass
+        self.tasks = {}
+        try:
+            import cv2
+            if self.cap is not None:
+                self.cap.release()
+            cv2.destroyAllWindows()
+        except Exception:  # noqa: BLE001
+            pass
+
+    # --- 값 읽기 ---
+    def lm(self, part):
+        if not self.pose:
+            return None
+        L = self.pose[_BODY[part]]
+        return L if L.visibility >= 0.5 else None
+
+
+_cam = _Camera()
+
+
+def _clamp100(v):
+    return round(max(0.0, min(100.0, v)), 1)
+
+
+def is_person_seen():
+    _cam.need("pose")
+    return any(_cam.lm(p) for p in ("LEFT_SHOULDER", "RIGHT_SHOULDER", "NOSE"))
+
+
+def body_x(part):
+    _cam.need("pose")
+    L = _cam.lm(part)
+    return _clamp100((1 - L.x) * 100) if L else -1
+
+
+def body_y(part):
+    _cam.need("pose")
+    L = _cam.lm(part)
+    return _clamp100((1 - L.y) * 100) if L else -1
+
+
+def is_arm_up(side=RIGHT):
+    _cam.need("pose")
+    if side == BOTH:
+        return is_arm_up(LEFT) and is_arm_up(RIGHT)
+    w, s = _cam.lm(side + "_WRIST"), _cam.lm(side + "_SHOULDER")
+    return bool(w and s and w.y < s.y - 0.05)
+
+
+def elbow_angle(side=RIGHT):
+    import math
+    _cam.need("pose")
+    s, e, w = _cam.lm(side + "_SHOULDER"), _cam.lm(side + "_ELBOW"), _cam.lm(side + "_WRIST")
+    if not (s and e and w):
+        return -1
+    a, b = (s.x - e.x, s.y - e.y), (w.x - e.x, w.y - e.y)
+    cos = (a[0] * b[0] + a[1] * b[1]) / ((math.hypot(*a) * math.hypot(*b)) or 1)
+    return round(math.degrees(math.acos(max(-1.0, min(1.0, cos)))))
+
+
+def shoulder_tilt():
+    """화면 오른쪽으로 몸을 기울이면 +, 왼쪽이면 − (도)"""
+    import math
+    _cam.need("pose")
+    l, r = _cam.lm("LEFT_SHOULDER"), _cam.lm("RIGHT_SHOULDER")
+    if not (l and r):
+        return 0
+    L, R = (1 - l.x, l.y), (1 - r.x, r.y)
+    a, b = (L, R) if L[0] < R[0] else (R, L)
+    return round(math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])))
+
+
+def is_hand_seen():
+    _cam.need("hand")
+    return _cam.hand is not None
+
+
+def is_gesture(name):
+    """'Closed_Fist', 'Open_Palm', 'Pointing_Up', 'Thumb_Up', 'Thumb_Down', 'Victory', 'ILoveYou'"""
+    _cam.need("hand")
+    return bool(_cam.hand and _cam.hand[1] == name)
+
+
+def finger_count():
+    import math
+    _cam.need("hand")
+    if not _cam.hand:
+        return 0
+    lm = _cam.hand[0]
+    d = lambda a, b: math.hypot(lm[a].x - lm[b].x, lm[a].y - lm[b].y)  # noqa: E731
+    n = sum(1 for tip, pip in ((8, 6), (12, 10), (16, 14), (20, 18)) if d(tip, 0) > d(pip, 0) * 1.1)
+    if d(4, 9) > d(3, 9) * 1.12 and d(4, 17) > d(5, 17) * 0.9:
+        n += 1
+    return n
+
+
+def hand_x():
+    _cam.need("hand")
+    return _clamp100((1 - _cam.hand[0][9].x) * 100) if _cam.hand else -1
+
+
+def hand_y():
+    _cam.need("hand")
+    return _clamp100((1 - _cam.hand[0][9].y) * 100) if _cam.hand else -1
+
+
+def _objs(name):
+    _cam.need("object")
+    return sorted((o for o in _cam.objects if name == "any" or o["name"] == name), key=lambda o: -o["score"])
+
+
+def is_object_seen(name):
+    """COCO 이름: 'person', 'cup', 'bottle', 'sports ball', 'cell phone', 'book' … 또는 'any'"""
+    return bool(_objs(name))
+
+
+def object_x(name):
+    o = _objs(name)
+    return o[0]["x"] if o else -1
+
+
+def object_y(name):
+    o = _objs(name)
+    return o[0]["y"] if o else -1
+
+
+def object_count(name):
+    return len(_objs(name))
+
+
+def _color(name):
+    _cam.need("color")
+    return _cam.colors.get(name, {"seen": False, "x": -1, "y": -1, "size": 0})
+
+
+def is_color_seen(name):
+    """'red', 'green', 'blue', 'yellow'"""
+    return _color(name)["seen"]
+
+
+def color_x(name):
+    return _color(name)["x"]
+
+
+def color_y(name):
+    return _color(name)["y"]
+
+
+def color_size(name):
+    return _color(name)["size"]
+
+
 # ---------------------------------------------------------------- 이벤트 데코레이터
 def on_start(fn):
     _handlers["start"].append(fn)
@@ -471,6 +837,8 @@ def run(scan_timeout=15):
                 h["prev"] = c
             if not has_events and not any(t.is_alive() for t in starts):
                 break
+            if _cam.thread is not None:
+                _cam.show()
             if not _hub.client.is_connected:
                 print("허브 연결이 끊어졌습니다.")
                 break
@@ -481,5 +849,7 @@ def run(scan_timeout=15):
         _running.clear()
         time.sleep(0.1)
         _all_stop()
+        if _cam.thread is not None:
+            _cam.close()
         _hub.disconnect()
         print("프로그램 종료")

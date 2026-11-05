@@ -6,7 +6,7 @@
   // 글씨가 잘 보이도록: 흰 글씨 블록은 대비 4.5:1 이상, 밝은 블록(이벤트·제어)은 진한 글씨
   const C = {
     event: '#f2b705', motor: '#1f6fd1', light: '#7a4cc8', sound: '#b03aa8',
-    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a'
+    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a', cam: '#0f766e'
   };
   window.WEDO_COLORS = C;
 
@@ -15,7 +15,20 @@
   const KEY_IDS = ['space', 'up', 'down', 'left', 'right', 'enter', 'any']
     .concat('abcdefghijklmnopqrstuvwxyz'.split('')).concat('0123456789'.split(''));
   const keyLabel = (k) => (k.length === 1 ? k.toUpperCase() : t('k_' + k));
-  const HATS = ['wedo_when_start', 'wedo_when_button', 'wedo_when_distance', 'wedo_when_tilt', 'wedo_when_key'];
+  const HATS = ['wedo_when_start', 'wedo_when_button', 'wedo_when_distance', 'wedo_when_tilt', 'wedo_when_key', 'wedo_when_cond'];
+  // AI 카메라
+  const BODY_PARTS = ['NOSE', 'LEFT_WRIST', 'RIGHT_WRIST', 'LEFT_ELBOW', 'RIGHT_ELBOW', 'LEFT_SHOULDER', 'RIGHT_SHOULDER', 'LEFT_HIP', 'RIGHT_HIP', 'LEFT_KNEE', 'RIGHT_KNEE', 'LEFT_ANKLE', 'RIGHT_ANKLE'];
+  const GESTURES = ['Closed_Fist', 'Open_Palm', 'Pointing_Up', 'Thumb_Up', 'Thumb_Down', 'Victory', 'ILoveYou'];
+  const OBJECTS = ['person', 'cup', 'bottle', 'sports ball', 'cell phone', 'book', 'scissors', 'teddy bear', 'banana', 'apple', 'cat', 'dog', 'chair', 'laptop', 'car', 'any'];
+  const CAM_COLORS = ['red', 'green', 'blue', 'yellow'];
+  // 블록 종류 → 필요한 카메라 기능
+  const CAM_MODE = {
+    wedo_cam_person: 'pose', wedo_cam_arm_up: 'pose', wedo_cam_body_pos: 'pose', wedo_cam_elbow: 'pose', wedo_cam_tilt: 'pose',
+    wedo_cam_hand_seen: 'hand', wedo_cam_gesture: 'hand', wedo_cam_fingers: 'hand', wedo_cam_hand_pos: 'hand',
+    wedo_cam_object_seen: 'object', wedo_cam_object_pos: 'object', wedo_cam_object_count: 'object',
+    wedo_cam_color_seen: 'color', wedo_cam_color_pos: 'color'
+  };
+  window.WEDO_CAM = { CAM_MODE, OBJECTS, GESTURES };
   window.WEDO_HATS = HATS;
 
   // 언어가 바뀔 때마다 다시 정의 (블록 문장·선택지만 바뀌고, 저장 값은 그대로)
@@ -32,6 +45,13 @@
     const DD = (name, options) => ({ type: 'field_dropdown', name, options });
     const st = (o) => Object.assign({ previousStatement: null, nextStatement: null }, o);
     window.WEDO_KEYS = KEYS;
+    const PARTS = BODY_PARTS.map((k) => [t('bp_' + k), k]);
+    const SIDES = [[t('side_LEFT'), 'LEFT'], [t('side_RIGHT'), 'RIGHT']];
+    const XY = [['x', 'x'], ['y', 'y']];
+    const GEST = GESTURES.map((g) => [t('g_' + g), g]);
+    const OBJS = OBJECTS.map((o) => [t('obj_' + o.replace(' ', '_')), o]);
+    const CCOL = CAM_COLORS.map((c) => [t('cc_' + c), c]);
+    window.CAM_LABEL = (name) => { const k = 'obj_' + String(name).replace(' ', '_'); const v = t(k); return v === k ? name : v; };
 
     Blockly.common.defineBlocksWithJsonArray([
       { type: 'wedo_when_start', message0: t('b_when_start'), nextStatement: null, colour: C.event },
@@ -63,7 +83,27 @@
       st({ type: 'wedo_wait_until', message0: t('b_wait_until'), args0: [{ type: 'input_value', name: 'COND', check: 'Boolean' }], colour: C.control }),
       { type: 'wedo_forever', message0: t('b_forever'), args0: [{ type: 'input_dummy' }, { type: 'input_statement', name: 'DO' }], previousStatement: null, colour: C.control },
       { type: 'wedo_stop', message0: t('b_stop'), previousStatement: null, colour: C.control },
-      st({ type: 'wedo_print', message0: t('b_print'), args0: [{ type: 'input_value', name: 'TEXT' }], colour: C.out })
+      st({ type: 'wedo_print', message0: t('b_print'), args0: [{ type: 'input_value', name: 'TEXT' }], colour: C.out }),
+      // 조건 이벤트 (카메라 등 아무 조건)
+      { type: 'wedo_when_cond', message0: t('b_when_cond'), args0: [{ type: 'input_value', name: 'COND', check: 'Boolean' }], nextStatement: null, colour: C.event, tooltip: t('tt_when_cond') },
+      // AI 카메라 — 스켈레톤
+      { type: 'wedo_cam_person', message0: t('b_cam_person'), output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_arm_up', message0: t('b_cam_arm_up'), args0: [DD('SIDE', SIDES.concat([[t('side_BOTH'), 'BOTH']]))], output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_body_pos', message0: t('b_cam_body_pos'), args0: [DD('PART', PARTS), DD('AXIS', XY)], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
+      { type: 'wedo_cam_elbow', message0: t('b_cam_elbow'), args0: [DD('SIDE', SIDES)], output: 'Number', colour: C.cam, tooltip: t('tt_elbow') },
+      { type: 'wedo_cam_tilt', message0: t('b_cam_tilt'), output: 'Number', colour: C.cam, tooltip: t('tt_tilt') },
+      // 손
+      { type: 'wedo_cam_hand_seen', message0: t('b_cam_hand_seen'), output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_gesture', message0: t('b_cam_gesture'), args0: [DD('G', GEST)], output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_fingers', message0: t('b_cam_fingers'), output: 'Number', colour: C.cam, tooltip: '0 ~ 5' },
+      { type: 'wedo_cam_hand_pos', message0: t('b_cam_hand_pos'), args0: [DD('AXIS', XY)], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
+      // 사물
+      { type: 'wedo_cam_object_seen', message0: t('b_cam_object_seen'), args0: [DD('OBJ', OBJS)], output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_object_pos', message0: t('b_cam_object_pos'), args0: [DD('OBJ', OBJS), DD('AXIS', XY)], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
+      { type: 'wedo_cam_object_count', message0: t('b_cam_object_count'), args0: [DD('OBJ', OBJS)], output: 'Number', colour: C.cam },
+      // 색깔
+      { type: 'wedo_cam_color_seen', message0: t('b_cam_color_seen'), args0: [DD('COLOR', CCOL)], output: 'Boolean', colour: C.cam },
+      { type: 'wedo_cam_color_pos', message0: t('b_cam_color_pos'), args0: [DD('COLOR', CCOL), DD('AXIS', XY.concat([[t('o_size'), 'size']]))], output: 'Number', colour: C.cam, tooltip: t('tt_xy') }
     ]);
     HATS.forEach((type) => {
       const def = Blockly.Blocks[type];
@@ -120,6 +160,26 @@
     return `W.onKey('${b.getFieldValue('KEY')}', async (__t) => {\n${body}});\n`;
   };
   J.wedo_key_pressed = (b) => [`W.isKeyPressed('${b.getFieldValue('KEY')}')`, JO.FUNCTION_CALL];
+  J.wedo_when_cond = function (b, G) {
+    const body = G.prefixLines(bodyOf(b, G), G.INDENT);
+    return `W.when(() => (${v(G, JO.NONE, b, 'COND', 'false')}), async (__t) => {\n${body}});\n`;
+  };
+  const q = (x) => JSON.stringify(x);
+  const F = JO.FUNCTION_CALL;
+  J.wedo_cam_person = () => ['W.cam.personSeen()', F];
+  J.wedo_cam_arm_up = (b) => [`W.cam.armUp(${q(b.getFieldValue('SIDE'))})`, F];
+  J.wedo_cam_body_pos = (b) => [`W.cam.bodyPos(${q(b.getFieldValue('PART'))}, ${q(b.getFieldValue('AXIS'))})`, F];
+  J.wedo_cam_elbow = (b) => [`W.cam.elbowAngle(${q(b.getFieldValue('SIDE'))})`, F];
+  J.wedo_cam_tilt = () => ['W.cam.shoulderTilt()', F];
+  J.wedo_cam_hand_seen = () => ['W.cam.handSeen()', F];
+  J.wedo_cam_gesture = (b) => [`W.cam.gestureIs(${q(b.getFieldValue('G'))})`, F];
+  J.wedo_cam_fingers = () => ['W.cam.fingerCount()', F];
+  J.wedo_cam_hand_pos = (b) => [`W.cam.handPos(${q(b.getFieldValue('AXIS'))})`, F];
+  J.wedo_cam_object_seen = (b) => [`W.cam.objectSeen(${q(b.getFieldValue('OBJ'))})`, F];
+  J.wedo_cam_object_pos = (b) => [`W.cam.objectPos(${q(b.getFieldValue('OBJ'))}, ${q(b.getFieldValue('AXIS'))})`, F];
+  J.wedo_cam_object_count = (b) => [`W.cam.objectCount(${q(b.getFieldValue('OBJ'))})`, F];
+  J.wedo_cam_color_seen = (b) => [`W.cam.colorSeen(${q(b.getFieldValue('COLOR'))})`, F];
+  J.wedo_cam_color_pos = (b) => [`W.cam.colorPos(${q(b.getFieldValue('COLOR'))}, ${q(b.getFieldValue('AXIS'))})`, F];
   J.wedo_motor_on_for = (b, G) => `await W.motorOnFor(${b.getFieldValue('PORT')}, ${v(G, JO.NONE, b, 'SECS', '1')});\n`;
   J.wedo_motor_on = (b) => `await W.motorOn(${b.getFieldValue('PORT')});\n`;
   J.wedo_motor_off = (b) => `await W.motorOff(${b.getFieldValue('PORT')});\n`;
@@ -151,7 +211,8 @@
   PY.addReservedWords('wedo2,on_start,on_button,on_key,is_key_pressed,when,run,motor_on,motor_off,motor_on_for,motor_power,' +
     'motor_direction,motor_reverse,light_color,light_rgb,light_off,play_tone,stop_sound,distance,is_tilted,' +
     'tilt_angle,is_button_pressed,timer,reset_timer,wait,wait_until,stop_all,ALL,UP,DOWN,LEFT,RIGHT,ANY,' +
-    'CLOCKWISE,COUNTERCLOCKWISE,' + COLOR_KEYS.join(','));
+    'CLOCKWISE,COUNTERCLOCKWISE,BOTH,is_person_seen,is_arm_up,body_x,body_y,elbow_angle,shoulder_tilt,is_hand_seen,is_gesture,finger_count,hand_x,hand_y,' +
+    'is_object_seen,object_x,object_y,object_count,is_color_seen,color_x,color_y,color_size,' + COLOR_KEYS.join(','));
   let hatSeq = 0;
   const pyGlobals = (b, G) => {
     const names = b.workspace.getAllVariables().map((x) => G.nameDB_.getName(x.getId(), Blockly.Names.NameType.VARIABLE));
@@ -175,6 +236,25 @@
     return pyHat(`on_key('${b.getFieldValue('KEY')}')`, 'when_key')(b, G);
   };
   P.wedo_key_pressed = (b) => [`is_key_pressed('${b.getFieldValue('KEY')}')`, PO.FUNCTION_CALL];
+  P.wedo_when_cond = function (b, G) {
+    return pyHat(`when(lambda: ${v(G, PO.NONE, b, 'COND', 'False')})`, 'when_condition')(b, G);
+  };
+  const pq = (x) => `'${x}'`;
+  const PF = PO.FUNCTION_CALL;
+  P.wedo_cam_person = () => ['is_person_seen()', PF];
+  P.wedo_cam_arm_up = (b) => [`is_arm_up(${b.getFieldValue('SIDE')})`, PF];
+  P.wedo_cam_body_pos = (b) => [`body_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('PART'))})`, PF];
+  P.wedo_cam_elbow = (b) => [`elbow_angle(${b.getFieldValue('SIDE')})`, PF];
+  P.wedo_cam_tilt = () => ['shoulder_tilt()', PF];
+  P.wedo_cam_hand_seen = () => ['is_hand_seen()', PF];
+  P.wedo_cam_gesture = (b) => [`is_gesture(${pq(b.getFieldValue('G'))})`, PF];
+  P.wedo_cam_fingers = () => ['finger_count()', PF];
+  P.wedo_cam_hand_pos = (b) => [`hand_${b.getFieldValue('AXIS')}()`, PF];
+  P.wedo_cam_object_seen = (b) => [`is_object_seen(${pq(b.getFieldValue('OBJ'))})`, PF];
+  P.wedo_cam_object_pos = (b) => [`object_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('OBJ'))})`, PF];
+  P.wedo_cam_object_count = (b) => [`object_count(${pq(b.getFieldValue('OBJ'))})`, PF];
+  P.wedo_cam_color_seen = (b) => [`is_color_seen(${pq(b.getFieldValue('COLOR'))})`, PF];
+  P.wedo_cam_color_pos = (b) => [`color_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('COLOR'))})`, PF];
   const pp = (p) => (p === '0' ? 'ALL' : p);
   P.wedo_motor_on_for = (b, G) => `motor_on_for(${pp(b.getFieldValue('PORT'))}, ${v(G, PO.NONE, b, 'SECS', '1')})\n`;
   P.wedo_motor_on = (b) => `motor_on(${pp(b.getFieldValue('PORT'))})\n`;

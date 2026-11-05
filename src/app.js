@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -87,7 +87,8 @@
       kind: 'categoryToolbox',
       contents: [
         { kind: 'category', name: t('cat_event'), colour: C.event, contents: [
-          B('wedo_when_start'), B('wedo_when_button'), B('wedo_when_key'), B('wedo_when_distance'), B('wedo_when_tilt')] },
+          B('wedo_when_start'), B('wedo_when_button'), B('wedo_when_key'), B('wedo_when_distance'), B('wedo_when_tilt'),
+          B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_arm_up', fields: { SIDE: 'RIGHT' } } } })] },
         { kind: 'category', name: t('cat_motor'), colour: C.motor, contents: [
           B('wedo_motor_on_for', { SECS: n(1) }), B('wedo_motor_on'), B('wedo_motor_off'),
           B('wedo_motor_power', { POWER: n(50) }), B('wedo_motor_dir'), B('wedo_motor_reverse')] },
@@ -98,6 +99,19 @@
         { kind: 'category', name: t('cat_sensor'), colour: C.sensor, contents: [
           B('wedo_distance'), B('wedo_distance_cmp', { VAL: n(30) }), B('wedo_tilt_is'), B('wedo_tilt_angle'),
           B('wedo_button'), B('wedo_key_pressed'), B('wedo_timer'), B('wedo_reset_timer')] },
+        { kind: 'category', name: t('cat_cam'), colour: C.cam, contents: [
+          { kind: 'label', text: '🦴 ' + t('cam_m_pose') },
+          B('wedo_cam_person'), B('wedo_cam_arm_up', null, { fields: { SIDE: 'RIGHT' } }), B('wedo_cam_body_pos', null, { fields: { PART: 'RIGHT_WRIST' } }),
+          B('wedo_cam_elbow'), B('wedo_cam_tilt'),
+          { kind: 'label', text: '✋ ' + t('cam_m_hand') },
+          B('wedo_cam_hand_seen'), B('wedo_cam_gesture', null, { fields: { G: 'Thumb_Up' } }), B('wedo_cam_fingers'), B('wedo_cam_hand_pos'),
+          { kind: 'label', text: '📦 ' + t('cam_m_object') },
+          B('wedo_cam_object_seen', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_pos', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_count', null, { fields: { OBJ: 'person' } }),
+          { kind: 'label', text: '🎨 ' + t('cam_m_color') },
+          B('wedo_cam_color_seen'), B('wedo_cam_color_pos'),
+          { kind: 'sep', gap: 20 },
+          B('wedo_motor_power', { POWER: { block: { type: 'wedo_cam_hand_pos', fields: { AXIS: 'y' } } } }, { fields: { PORT: '1' } }),
+          B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_gesture', fields: { G: 'Closed_Fist' } } } })] },
         { kind: 'category', name: t('cat_control'), colour: C.control, contents: [
           B('wedo_wait', { SECS: n(1) }), B('controls_repeat_ext', { TIMES: n(10) }), B('wedo_forever'),
           B('controls_if'), B('controls_if', null, { extraState: { hasElse: true } }),
@@ -303,7 +317,7 @@
   $('#btnCopyPy').onclick = () => copy(pySrc);
   $('#btnSavePy').onclick = () => download(safeName($('#projName').value).replace(/\s+/g, '_') + '.py', pySrc);
   $('#btnPyHelp').onclick = () => openModal(`
-    <h3>${t('pyhelp_title')}</h3>${t('pyhelp_body')}
+    <h3>${t('pyhelp_title')}</h3>${t('pyhelp_body')}${t('pycam_note')}
     <div class="actions" style="justify-content:flex-start"><button class="btn primary" id="dlLib">${t('lib_save')}</button><button class="btn" id="cpLib">${t('lib_copy')}</button></div>
     <h3 style="margin-top:18px">${t('funcs')}</h3>
     <pre><code>motor_on(1) / motor_off(ALL) / motor_on_for(1, 2)
@@ -315,12 +329,17 @@ is_button_pressed()     is_key_pressed('space')
 timer() / reset_timer()
 wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
 
+is_person_seen() / is_arm_up(RIGHT) / body_x('NOSE') / elbow_angle(LEFT) / shoulder_tilt()
+is_hand_seen() / is_gesture('Thumb_Up') / finger_count() / hand_x() / hand_y()
+is_object_seen('cup') / object_x('cup') / object_count('person')
+is_color_seen('red') / color_x('red') / color_size('red')
+
 @on_start  @on_button  @on_key('up')  @when(lambda: ...)   →  run()</code></pre>
     ${closeBtn(t('close'))}`, (m) => {
     m.querySelector('#dlLib').onclick = () => download('wedo2.py', window.WEDO2_PY);
     m.querySelector('#cpLib').onclick = () => copy(window.WEDO2_PY);
   });
-  $('#btnHelp').onclick = () => openModal(`<h3>${t('help_title')}</h3>${t('help_body')}
+  $('#btnHelp').onclick = () => openModal(`<h3>${t('help_title')}</h3>${t('help_body')}<ol start="7">${t('cam_help')}</ol>
     <p class="muted">${t('report_line')} <b>${REPORT_EMAIL}</b> · v${VERSION}</p>${closeBtn()}`);
 
   /* ---------- 오류 신고 ---------- */
@@ -333,6 +352,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
       `Bluetooth: ${'bluetooth' in navigator ? 'yes' : 'no'} · secure: ${window.isSecureContext}`,
       `Hub: ${hub.connected ? hub.state.name + ' · ports ' + JSON.stringify(hub.state.ports) + ' · battery ' + hub.state.battery : 'not connected'}`,
       `Page: ${location.href.split('#')[0]}`,
+      `Camera: ${cam.on ? 'on' : 'off'} · ${['pose', 'hand', 'object', 'color'].map((m) => m + '=' + cam.status(m) + (cam.errors[m] ? '(' + cam.errors[m] + ')' : '')).join(' ')}`,
       '', '--- console ---', ...lines
     ].join('\n');
   }
@@ -405,15 +425,44 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
     clearHighlights() { highlighted.forEach((id) => { try { ws.highlightBlock(id, false); } catch (e) {} }); highlighted.clear(); }
   };
   const rt = new WeDo.Runtime(hub, ui);
+  const cam = new WeCam.Camera();
+  rt.cam = cam;
   rt.addEventListener('state', () => {
     document.body.classList.toggle('running', rt.running);
     $('#btnStop').disabled = !rt.running;
     renderVars();
   });
 
-  $('#btnRun').onclick = () => {
+  // 프로그램에 들어 있는 카메라 블록으로 필요한 기능을 정한다
+  function neededCamModes() {
+    const set = new Set();
+    ws.getAllBlocks(false).forEach((b) => { if (b.isEnabled() && window.WEDO_CAM.CAM_MODE[b.type]) set.add(window.WEDO_CAM.CAM_MODE[b.type]); });
+    return [...set];
+  }
+  async function prepareCamera(modes) {
+    if (!modes.length) return true;
+    showCamWin(true);
+    const sup = WeCam.Camera.support();
+    if (sup !== 'ok') { log(t(sup === 'insecure' ? 'cam_insecure' : 'cam_unsupported'), 'err'); return false; }
+    try { await cam.start(); } catch (e) { log(t('cam_denied') + ` (${e.name || e})`, 'err'); return false; }
+    const todo = modes.filter((m) => !cam.isReady(m));
+    if (todo.length) log(t('cam_wait'), 'sys');
+    await Promise.all(modes.map((m) => cam.enable(m, true)));
+    const failed = modes.filter((m) => cam.errors[m]);
+    if (failed.length) { failed.forEach((m) => log(`${t('cam_err_model')} — ${t('cam_m_' + m)}: ${cam.errors[m]}`, 'err')); return false; }
+    if (todo.length) log(t('cam_ready_log'), 'sys');
+    return true;
+  }
+  let starting = false;
+  $('#btnRun').onclick = async () => {
+    if (starting) return;
     ensureAudio();
     const code = genJS();
+    const modes = neededCamModes();
+    if (modes.length) {
+      starting = true;
+      try { if (!(await prepareCamera(modes))) return; } finally { starting = false; }
+    }
     if (!hub.connected) toast(t('run_sim_toast'), 2000);
     log(`▶ "${$('#projName').value}" ${t('run_log')}` + (hub.connected ? '' : t('run_sim_suffix')), 'sys');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // 스페이스가 버튼을 누르지 않도록
@@ -501,6 +550,82 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
   const press = (v) => (e) => { if (hub.connected) return; e.preventDefault(); hub.state.button = v; hub.emit(); };
   sb.addEventListener('pointerdown', press(true));
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => sb.addEventListener(ev, press(false)));
+
+  /* ---------- AI 카메라 창 ---------- */
+  const camWin = $('#camWin');
+  cam.attach($('#camCanvas'));
+  function showCamWin(on) {
+    camWin.hidden = !on;
+    $('#btnCam').classList.toggle('on', on);
+    try { localStorage.setItem('wedomakers-cam', on ? '1' : ''); } catch (e) {}
+  }
+  $('#btnCam').onclick = () => showCamWin(camWin.hidden);
+  $('#camClose').onclick = () => { showCamWin(false); };
+  $('#camPower').onclick = async () => {
+    if (cam.on) { cam.stop(); return; }
+    const sup = WeCam.Camera.support();
+    if (sup !== 'ok') { toast(t(sup === 'insecure' ? 'cam_insecure' : 'cam_unsupported')); return; }
+    try { await cam.start(); } catch (e) { toast(t('cam_denied')); log(t('cam_denied') + ` (${e.name || e})`, 'err'); }
+  };
+  camWin.querySelectorAll('[data-mode]').forEach((cb) => {
+    cb.onchange = async () => {
+      if (cb.checked && !cam.on) { try { await cam.start(); } catch (e) { cb.checked = false; toast(t('cam_denied')); return; } }
+      cam.enable(cb.dataset.mode, cb.checked);
+    };
+  });
+  $('#camSize').onclick = () => {
+    const sizes = ['s', 'm', 'l'];
+    const cur = sizes.find((x) => camWin.classList.contains('sz-' + x)) || 'm';
+    const next = sizes[(sizes.indexOf(cur) + 1) % 3];
+    sizes.forEach((x) => camWin.classList.toggle('sz-' + x, x === next));
+    try { localStorage.setItem('wedomakers-cam-size', next); } catch (e) {}
+  };
+  try { const sz = localStorage.getItem('wedomakers-cam-size') || 'm'; camWin.classList.add('sz-' + sz); } catch (e) { camWin.classList.add('sz-m'); }
+  // 창 끌어서 옮기기
+  (function () {
+    const head = $('#camHead'); let sx, sy, ox, oy, drag = false;
+    head.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button,select,input')) return;
+      drag = true; head.setPointerCapture(e.pointerId);
+      const r = camWin.getBoundingClientRect(), pr = $('#blockWrap').getBoundingClientRect();
+      sx = e.clientX; sy = e.clientY; ox = r.left - pr.left; oy = r.top - pr.top;
+    });
+    head.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const pr = $('#blockWrap').getBoundingClientRect(), r = camWin.getBoundingClientRect();
+      const x = Math.max(0, Math.min(pr.width - r.width, ox + e.clientX - sx));
+      const y = Math.max(0, Math.min(pr.height - 40, oy + e.clientY - sy));
+      camWin.style.left = x + 'px'; camWin.style.top = y + 'px'; camWin.style.bottom = 'auto'; camWin.style.right = 'auto';
+    });
+    head.addEventListener('pointerup', () => { drag = false; });
+  })();
+  const yes = (b) => (b ? '✓ ' + t('cam_seen') : '– ' + t('cam_notseen'));
+  function renderCam() {
+    $('#camPower').textContent = cam.on ? t('cam_stop') : t('cam_start');
+    $('#camPower').classList.toggle('primary', !cam.on);
+    camWin.classList.toggle('live', cam.on);
+    camWin.querySelectorAll('[data-mode]').forEach((cb) => {
+      const m = cb.dataset.mode, st = cam.status(m);
+      cb.checked = !!cam.want[m];
+      cb.parentElement.dataset.st = st;
+      cb.parentElement.title = st === 'error' ? cam.errors[m] : '';
+    });
+    const busy = ['pose', 'hand', 'object'].some((m) => cam.status(m) === 'loading');
+    $('#camStatus').textContent = !cam.on ? t('cam_off') : busy ? t('cam_loading') : `${cam.fps} fps`;
+  }
+  function renderCamRead() {
+    if (!cam.on) { $('#camRead').innerHTML = `<span class="muted">${esc(t('cam_hint'))}</span>`; return; }
+    const out = [];
+    if (cam.want.pose) out.push(`<span><b>${t('cam_person')}</b> ${yes(cam.personSeen())}</span>`);
+    if (cam.want.hand) out.push(`<span><b>${t('cam_m_hand')}</b> ${cam.hand ? esc(t('g_' + cam.hand.gesture)) : '–'}</span>`, `<span><b>${t('cam_fingers')}</b> ${cam.hand ? cam.fingerCount() : '–'}</span>`);
+    if (cam.want.object) { const names = [...new Set(cam.objects.map((o) => window.CAM_LABEL(o.name)))]; out.push(`<span><b>${t('cam_m_object')}</b> ${names.length ? esc(names.join(', ')) : '–'}</span>`); }
+    if (cam.want.color) { const cs = Object.keys(cam.colors).filter((k) => cam.colors[k].seen).map((k) => t('cc_' + k)); out.push(`<span><b>${t('cam_m_color')}</b> ${cs.length ? esc(cs.join(', ')) : '–'}</span>`); }
+    const html = out.join('');
+    if ($('#camRead').innerHTML !== html) $('#camRead').innerHTML = html;
+  }
+  cam.addEventListener('change', renderCam);
+  setInterval(() => { if (cam.on && !camWin.hidden) renderCamRead(); }, 200);
+  try { if (localStorage.getItem('wedomakers-cam')) showCamWin(true); } catch (e) {}
 
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');
@@ -612,7 +737,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
       const nm = $('#projName').value;
       ['proj_example', 'proj_new', 'proj_default'].forEach((k) => { if (I18N.all(k).includes(nm)) $('#projName').value = t(k); });
       createWorkspace(state);
-      refreshCode(); renderHub(); renderKeys(); renderVars(); autosave();
+      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); autosave();
     }
   }
   langSel.onchange = () => { rt.stop('user'); setLanguage(langSel.value); };
@@ -625,7 +750,7 @@ wait(1) / wait_until(lambda: distance() &lt; 30) / stop_all()
     if (saved && saved.workspace) loadProject(saved);
     else loadProject(example(), t('proj_example'));
   })();
-  renderHub(); renderKeys(); renderVars();
+  renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead();
 
   window.__wedo = { get ws() { return ws; }, hub, rt, genJS, genPython, setLanguage };
   log(t('ready'), 'sys');

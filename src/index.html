@@ -25,7 +25,7 @@ header > *{flex-shrink:0}
 #projName{flex:1 1 120px !important;min-width:80px;max-width:300px}
 a.btn{text-decoration:none}
 @media (max-width:1500px){header .btn.ghost span{display:none}header .btn.ghost{padding:7px 9px}}
-@media (max-width:1180px){.brand small{display:none}#btnRun span,#btnStop span{display:none}}
+@media (max-width:1180px){.brand small{display:none}#btnRun span,#btnStop span,#btnCam span{display:none}}
 .brand{display:flex;align-items:center;gap:9px;margin-right:6px}
 .brand-logo{width:36px;height:36px;display:block}
 .brand b{font-weight:800;font-size:16px;letter-spacing:-.3px}
@@ -74,6 +74,27 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .vm-row:last-child{border-bottom:0}
 .vm-name{font-weight:700;color:#7a3a00;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vm-val{font:700 18px/1.2 "JetBrains Mono",ui-monospace,monospace;color:#1d2433;background:#fff2e8;border-radius:7px;padding:2px 9px;min-width:44px;text-align:right}
+/* AI 카메라 창 */
+.camwin{position:absolute;right:66px;bottom:14px;z-index:40;max-width:calc(100% - 180px);background:#0f1624;color:#e6edf7;border-radius:14px;box-shadow:0 10px 28px rgba(10,20,40,.35);overflow:hidden;display:flex;flex-direction:column}
+.camwin[hidden]{display:none}
+.camwin.sz-s{width:240px}.camwin.sz-m{width:340px}.camwin.sz-l{width:480px}
+.cam-head{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:#0f766e;cursor:move;user-select:none;touch-action:none;font-size:13px}
+.cam-head button{border:0;background:rgba(255,255,255,.18);color:#fff;width:24px;height:24px;border-radius:6px;font-size:15px;line-height:1;padding:0}
+.cam-status{font-size:11.5px;opacity:.85;font-weight:600}
+.cam-view{position:relative;background:#000;aspect-ratio:4/3}
+.cam-view canvas{width:100%;height:100%;display:block}
+.cam-view #camPower{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.camwin.live .cam-view #camPower{top:auto;bottom:8px;transform:translateX(-50%);opacity:.0;transition:opacity .2s;background:rgba(0,0,0,.55);border-color:transparent;color:#fff}
+.camwin.live .cam-view:hover #camPower{opacity:1}
+.cam-modes{display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 10px;border-bottom:1px solid #1e2a3d;font-size:12.5px}
+.cam-modes label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.cam-modes label[data-st=loading] span:after{content:" …";color:#ffd166}
+.cam-modes label[data-st=ready] span{color:#7ff0c8}
+.cam-modes label[data-st=error] span{color:#ff8a80;text-decoration:line-through}
+.cam-read{display:flex;flex-wrap:wrap;gap:4px 12px;padding:7px 10px 9px;font-size:12.5px;min-height:30px}
+.cam-read b{color:#7fd8cf;margin-right:3px}
+.cam-read .muted{color:#9fb0c6}
+#btnCam.on{background:#e6f6f4;border-color:#9fd9d1;color:#0f5f58}
 /* 언어 선택 */
 #langSel{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font:inherit;font-weight:600;color:var(--ink)}
 .linkbtn{border:0;background:none;color:var(--brand);text-decoration:underline;margin-left:8px;font:inherit;font-size:12px;padding:0}
@@ -191,6 +212,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <input type="file" id="fileIn" accept=".json,.wedo,.wedo.json" hidden>
     <div class="spacer"></div>
     <select id="langSel" data-i18n-title="lang"></select>
+    <button class="btn" id="btnCam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg><span data-i18n="cam_btn">AI 카메라</span></button>
     <button class="btn" id="btnConnect"><span class="dot"></span><span id="connLabel">허브 연결</span></button>
     <div class="sep"></div>
     <button class="btn" id="btnRun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg><span data-i18n="btn_run">실행</span></button>
@@ -205,6 +227,21 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       <div class="varmon" id="varMon" hidden>
         <div class="vm-head"><span data-i18n="var_mon">변수 모니터</span><button id="vmFold" aria-label="fold">−</button></div>
         <div id="vmList"></div>
+      </div>
+      <div class="camwin" id="camWin" hidden>
+        <div class="cam-head" id="camHead">
+          <b data-i18n="cam_title">AI 카메라</b><span class="cam-status" id="camStatus"></span>
+          <span class="spacer"></span>
+          <button id="camSize" title="S / M / L">⤡</button><button id="camClose" aria-label="close">×</button>
+        </div>
+        <div class="cam-view"><canvas id="camCanvas" width="640" height="480"></canvas><button class="btn primary" id="camPower">카메라 켜기</button></div>
+        <div class="cam-modes">
+          <label><input type="checkbox" data-mode="pose"><span data-i18n="cam_m_pose">스켈레톤</span></label>
+          <label><input type="checkbox" data-mode="hand"><span data-i18n="cam_m_hand">손 모양</span></label>
+          <label><input type="checkbox" data-mode="object"><span data-i18n="cam_m_object">사물</span></label>
+          <label><input type="checkbox" data-mode="color"><span data-i18n="cam_m_color">색깔</span></label>
+        </div>
+        <div class="cam-read" id="camRead"></div>
       </div>
       <div class="zoom">
         <button id="zIn" data-i18n-title="t_zin">+</button>
@@ -282,6 +319,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 <script>/*__I18N__*/</script>
 <script>/*__BLOCKS__*/</script>
 <script>/*__HUB__*/</script>
+<script>/*__CAMERA__*/</script>
 <script>/*__APP__*/</script>
 </body>
 </html>

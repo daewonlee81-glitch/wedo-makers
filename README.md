@@ -8,8 +8,10 @@ LEGO WeDo 2.0 허브를 웹브라우저에서 블록으로 코딩하고, 같은 
 ## 구성 파일
 | 파일 | 설명 |
 |---|---|
-| `index.html` | 웹앱 전체 (Blockly 포함, 외부 의존성 없음 · 약 1.4MB) |
+| `index.html` | 웹앱 전체 (Blockly 포함, 외부 의존성 없음 · 약 1.5MB) |
 | `wedo2.py` | 생성된 Python 코드를 PC에서 실행하는 라이브러리 (bleak 사용) |
+| `vendor/tasks-vision/` | AI 카메라용 MediaPipe 라이브러리 (Apache 2.0) |
+| `models/` | AI 모델: 스켈레톤(pose_landmarker_lite) · 손 모양(gesture_recognizer) · 사물(efficientdet_lite0) |
 
 ## 배포 방법
 Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니다.
@@ -32,6 +34,13 @@ Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니�
 - **변수 모니터**: 블록 화면 오른쪽 위에 변수 값이 실시간으로 표시됩니다(접기 가능)
 - **블록 가독성**: 흰 글씨 블록은 명암 대비 4.5:1 이상의 색, 밝은 블록(이벤트·제어)은 진한 글씨, 굵은 13.5px 글꼴
 - **창 크기 조절**: 블록 화면과 오른쪽 패널 사이(좌우), Python 코드와 허브·콘솔 사이(위아래)를 끌어서 조절. 두 번 클릭하면 원래대로
+- **AI 카메라**: PC 카메라로 인식한 값을 블록에서 바로 씁니다. 블록을 쓰고 실행하면 카메라가 자동으로 켜지고, 블록 화면 오른쪽 아래 창에 스켈레톤·손·사물·색깔 인식 결과가 그려집니다. 영상은 PC 밖으로 전송되지 않습니다
+  - 🦴 스켈레톤: `사람이 보이는가?`, `[오른팔] 을 들었는가?`, `[오른손목] 의 [x] 위치`, `[왼팔] 팔꿈치 각도`, `몸(어깨) 기울기`
+  - ✋ 손 모양: `손이 보이는가?`, `손 모양이 [👍 엄지 위로] 인가?` (주먹·보자기·검지·엄지 위/아래·브이·사랑해), `펼친 손가락 수`, `손의 [x/y] 위치`
+  - 📦 사물: `[컵] 이 보이는가?`, `[컵] 의 [x] 위치`, `보이는 [사람] 의 수` (사람·컵·병·공·휴대폰·책 등 15종)
+  - 🎨 색깔: `[빨강] 색이 보이는가?`, `[빨강] 색의 [x / y / 크기]` (빨강·초록·파랑·노랑)
+  - 이벤트 `‹조건› 이 될 때` — 예: `오른팔을 들었는가?` 가 참이 되는 순간 실행
+  - 좌표: 거울 화면 기준 x 0(왼쪽)~100(오른쪽), y 0(아래)~100(위). 안 보이면 -1
 - **오류 신고**: 상단 깃발 버튼 또는 콘솔의 오류 줄에서 robot-league@naver.com 으로 진단 정보와 함께 보낼 수 있습니다
 - **저장**: 브라우저에 자동 저장, `.wedo.json` 파일로 내보내기/열기
 - 단축키: `Ctrl+Enter` 실행, `Esc` 정지
@@ -40,6 +49,7 @@ Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니�
 ```bash
 pip install bleak
 pip install pynput        # 키보드 블록을 쓴 경우에만
+pip install mediapipe opencv-python   # AI 카메라 블록을 쓴 경우에만 (처음 실행 때 모델 자동 다운로드, Q 로 카메라 창 닫기)
 python 내프로젝트.py      # 같은 폴더에 wedo2.py 가 있어야 합니다
 ```
 macOS에서 키보드 블록을 쓰려면 터미널에 '손쉬운 사용(입력 모니터링)' 권한이 필요합니다.
@@ -66,10 +76,12 @@ python3 build.py     # index.html, wedo2.py 다시 생성
 | `src/index.html` | 화면 구조 · 스타일 |
 | `src/i18n.js` | 5개 언어 번역표 (화면·블록·도움말) |
 | `src/blocks.js` | 워드블럭 정의 + JavaScript/Python 코드 생성기 |
+| `src/camera.js` | AI 카메라: 스켈레톤·손 모양·사물·색깔 인식과 화면 그리기 |
 | `src/hub.js` | WeDo 2.0 Web Bluetooth 드라이버, 가상 허브, 실행 런타임 |
 | `src/app.js` | 툴박스, 저장, Python 보기, 키보드·변수 모니터 등 UI |
 | `src/wedo2.py` | PC용 Python 라이브러리 원본 |
 | `assets/` | 로고 · 파비콘 |
+| `models/` | AI 모델 원본 (빌드 시 그대로 사용) |
 
 ## 문의 · 오류 신고
 robot-league@naver.com (IREA 국제로봇교육협의회)
