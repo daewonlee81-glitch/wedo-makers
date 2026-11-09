@@ -6,7 +6,7 @@
   // 글씨가 잘 보이도록: 흰 글씨 블록은 대비 4.5:1 이상, 밝은 블록(이벤트·제어)은 진한 글씨
   const C = {
     event: '#f2b705', motor: '#1f6fd1', light: '#7a4cc8', sound: '#b03aa8',
-    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a', cam: '#0f766e'
+    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a', cam: '#0f766e', learn: '#6d28d9'
   };
   window.WEDO_COLORS = C;
 
@@ -26,10 +26,33 @@
     wedo_cam_person: 'pose', wedo_cam_arm_up: 'pose', wedo_cam_body_pos: 'pose', wedo_cam_elbow: 'pose', wedo_cam_tilt: 'pose',
     wedo_cam_hand_seen: 'hand', wedo_cam_gesture: 'hand', wedo_cam_fingers: 'hand', wedo_cam_hand_pos: 'hand',
     wedo_cam_object_seen: 'object', wedo_cam_object_pos: 'object', wedo_cam_object_count: 'object',
-    wedo_cam_color_seen: 'color', wedo_cam_color_pos: 'color'
+    wedo_cam_color_seen: 'color', wedo_cam_color_pos: 'color',
+    wedo_cam_learned_is: 'learn', wedo_cam_learned_name: 'learn', wedo_cam_learned_conf: 'learn'
   };
   window.WEDO_CAM = { CAM_MODE, OBJECTS, GESTURES };
   window.WEDO_HATS = HATS;
+
+  // 학생이 학습시킨 클래스·색이 목록에 바로 나타나는 드롭다운
+  window.WEDO_LEARN = window.WEDO_LEARN || { classes: () => [], colors: () => [], className: (id) => id, colorName: (id) => id };
+  class FieldDyn extends Blockly.FieldDropdown {
+    static fromJson(o) { return new FieldDyn(DYN[o.source]); }
+    doClassValidation_(v) { return v; } // 학습 데이터가 나중에 불러와져도 값을 지키도록
+  }
+  const DYN = {
+    classes: function () {
+      const list = window.WEDO_LEARN.classes().map((c) => [c.name, c.id]);
+      const cur = this && this.getValue && this.getValue();
+      if (cur && !list.some((x) => x[1] === cur)) list.push([window.WEDO_LEARN.className(cur) || '?', cur]);
+      return list.length ? list : [[t('learn_none'), '']];
+    },
+    colors: function () {
+      const list = CAM_COLORS.map((c) => [t('cc_' + c), c]).concat(window.WEDO_LEARN.colors().map((c) => ['★ ' + c.name, 'u:' + c.id]));
+      const cur = this && this.getValue && this.getValue();
+      if (cur && !list.some((x) => x[1] === cur)) list.push(['★ ' + (window.WEDO_LEARN.colorName(cur) || '?'), cur]);
+      return list;
+    }
+  };
+  if (!Blockly.registry.hasItem(Blockly.registry.Type.FIELD, 'field_dyn')) Blockly.fieldRegistry.register('field_dyn', FieldDyn);
 
   // 언어가 바뀔 때마다 다시 정의 (블록 문장·선택지만 바뀌고, 저장 값은 그대로)
   function defineBlocks() {
@@ -102,8 +125,12 @@
       { type: 'wedo_cam_object_pos', message0: t('b_cam_object_pos'), args0: [DD('OBJ', OBJS), DD('AXIS', XY)], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
       { type: 'wedo_cam_object_count', message0: t('b_cam_object_count'), args0: [DD('OBJ', OBJS)], output: 'Number', colour: C.cam },
       // 색깔
-      { type: 'wedo_cam_color_seen', message0: t('b_cam_color_seen'), args0: [DD('COLOR', CCOL)], output: 'Boolean', colour: C.cam },
-      { type: 'wedo_cam_color_pos', message0: t('b_cam_color_pos'), args0: [DD('COLOR', CCOL), DD('AXIS', XY.concat([[t('o_size'), 'size']]))], output: 'Number', colour: C.cam, tooltip: t('tt_xy') }
+      { type: 'wedo_cam_color_seen', message0: t('b_cam_color_seen'), args0: [{ type: 'field_dyn', name: 'COLOR', source: 'colors' }], output: 'Boolean', colour: C.cam, tooltip: t('tt_learned_color') },
+      { type: 'wedo_cam_color_pos', message0: t('b_cam_color_pos'), args0: [{ type: 'field_dyn', name: 'COLOR', source: 'colors' }, DD('AXIS', XY.concat([[t('o_size'), 'size']]))], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
+      // 학습한 사물
+      { type: 'wedo_cam_learned_is', message0: t('b_cam_learned_is'), args0: [{ type: 'field_dyn', name: 'CLS', source: 'classes' }], output: 'Boolean', colour: C.learn, tooltip: t('tt_learned') },
+      { type: 'wedo_cam_learned_name', message0: t('b_cam_learned_name'), output: 'String', colour: C.learn, tooltip: t('tt_learned') },
+      { type: 'wedo_cam_learned_conf', message0: t('b_cam_learned_conf'), args0: [{ type: 'field_dyn', name: 'CLS', source: 'classes' }], output: 'Number', colour: C.learn, tooltip: t('tt_conf') }
     ]);
     HATS.forEach((type) => {
       const def = Blockly.Blocks[type];
@@ -180,6 +207,9 @@
   J.wedo_cam_object_count = (b) => [`W.cam.objectCount(${q(b.getFieldValue('OBJ'))})`, F];
   J.wedo_cam_color_seen = (b) => [`W.cam.colorSeen(${q(b.getFieldValue('COLOR'))})`, F];
   J.wedo_cam_color_pos = (b) => [`W.cam.colorPos(${q(b.getFieldValue('COLOR'))}, ${q(b.getFieldValue('AXIS'))})`, F];
+  J.wedo_cam_learned_is = (b) => [`W.cam.learnedIs(${q(b.getFieldValue('CLS'))})`, F];
+  J.wedo_cam_learned_name = () => ['W.cam.learnedName()', F];
+  J.wedo_cam_learned_conf = (b) => [`W.cam.learnedConf(${q(b.getFieldValue('CLS'))})`, F];
   J.wedo_motor_on_for = (b, G) => `await W.motorOnFor(${b.getFieldValue('PORT')}, ${v(G, JO.NONE, b, 'SECS', '1')});\n`;
   J.wedo_motor_on = (b) => `await W.motorOn(${b.getFieldValue('PORT')});\n`;
   J.wedo_motor_off = (b) => `await W.motorOff(${b.getFieldValue('PORT')});\n`;
@@ -212,7 +242,7 @@
     'motor_direction,motor_reverse,light_color,light_rgb,light_off,play_tone,stop_sound,distance,is_tilted,' +
     'tilt_angle,is_button_pressed,timer,reset_timer,wait,wait_until,stop_all,ALL,UP,DOWN,LEFT,RIGHT,ANY,' +
     'CLOCKWISE,COUNTERCLOCKWISE,BOTH,is_person_seen,is_arm_up,body_x,body_y,elbow_angle,shoulder_tilt,is_hand_seen,is_gesture,finger_count,hand_x,hand_y,' +
-    'is_object_seen,object_x,object_y,object_count,is_color_seen,color_x,color_y,color_size,' + COLOR_KEYS.join(','));
+    'is_object_seen,object_x,object_y,object_count,is_color_seen,color_x,color_y,color_size,is_learned,learned_name,learned_confidence,load_learning,learn_color,' + COLOR_KEYS.join(','));
   let hatSeq = 0;
   const pyGlobals = (b, G) => {
     const names = b.workspace.getAllVariables().map((x) => G.nameDB_.getName(x.getId(), Blockly.Names.NameType.VARIABLE));
@@ -253,8 +283,14 @@
   P.wedo_cam_object_seen = (b) => [`is_object_seen(${pq(b.getFieldValue('OBJ'))})`, PF];
   P.wedo_cam_object_pos = (b) => [`object_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('OBJ'))})`, PF];
   P.wedo_cam_object_count = (b) => [`object_count(${pq(b.getFieldValue('OBJ'))})`, PF];
-  P.wedo_cam_color_seen = (b) => [`is_color_seen(${pq(b.getFieldValue('COLOR'))})`, PF];
-  P.wedo_cam_color_pos = (b) => [`color_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('COLOR'))})`, PF];
+  // 학습한 색·사물은 Python 에서 이름으로 쓴다 (따옴표·역슬래시는 안전하게)
+  const pyStr = (x) => `'${String(x).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  const pyColor = (v) => pyStr(String(v).startsWith('u:') ? window.WEDO_LEARN.colorName(v) : v);
+  P.wedo_cam_color_seen = (b) => [`is_color_seen(${pyColor(b.getFieldValue('COLOR'))})`, PF];
+  P.wedo_cam_color_pos = (b) => [`color_${b.getFieldValue('AXIS')}(${pyColor(b.getFieldValue('COLOR'))})`, PF];
+  P.wedo_cam_learned_is = (b) => [`is_learned(${pyStr(window.WEDO_LEARN.className(b.getFieldValue('CLS')))})`, PF];
+  P.wedo_cam_learned_name = () => ['learned_name()', PF];
+  P.wedo_cam_learned_conf = (b) => [`learned_confidence(${pyStr(window.WEDO_LEARN.className(b.getFieldValue('CLS')))})`, PF];
   const pp = (p) => (p === '0' ? 'ALL' : p);
   P.wedo_motor_on_for = (b, G) => `motor_on_for(${pp(b.getFieldValue('PORT'))}, ${v(G, PO.NONE, b, 'SECS', '1')})\n`;
   P.wedo_motor_on = (b) => `motor_on(${pp(b.getFieldValue('PORT'))})\n`;

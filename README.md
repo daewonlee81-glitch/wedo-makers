@@ -11,7 +11,7 @@ LEGO WeDo 2.0 허브를 웹브라우저에서 블록으로 코딩하고, 같은 
 | `index.html` | 웹앱 전체 (Blockly 포함, 외부 의존성 없음 · 약 1.5MB) |
 | `wedo2.py` | 생성된 Python 코드를 PC에서 실행하는 라이브러리 (bleak 사용) |
 | `vendor/tasks-vision/` | AI 카메라용 MediaPipe 라이브러리 (Apache 2.0) |
-| `models/` | AI 모델: 스켈레톤(pose_landmarker_lite) · 손 모양(gesture_recognizer) · 사물(efficientdet_lite0) |
+| `models/` | AI 모델: 스켈레톤(pose_landmarker_lite) · 손 모양(gesture_recognizer) · 사물(efficientdet_lite0) · 학습용 특징 추출(mobilenet_v3_small) |
 
 ## 배포 방법
 Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니다.
@@ -41,6 +41,11 @@ Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니�
   - 🎨 색깔: `[빨강] 색이 보이는가?`, `[빨강] 색의 [x / y / 크기]` (빨강·초록·파랑·노랑)
   - 이벤트 `‹조건› 이 될 때` — 예: `오른팔을 들었는가?` 가 참이 되는 순간 실행
   - 좌표: 거울 화면 기준 x 0(왼쪽)~100(오른쪽), y 0(아래)~100(위). 안 보이면 -1
+- **AI 학습 (사물 학습 · 색 학습)**: 카메라 창의 **🧠 AI 학습하기** 또는 AI 카메라 분류의 버튼으로 엽니다
+  - **사물 학습**: 클래스(예: 빨간 컵 / 파란 공 / 배경)마다 `누르고 있으면 촬영`으로 사진을 모으고 `학습시키기`. 확신도 막대로 바로 시험. 블록 `학습한 사물이 [빨간 컵] 인가?`, `학습한 사물 이름`, `[빨간 컵] 확신도 (%)`
+  - **색 학습**: 화면 가운데 네모에 색 물건을 대고 `가운데 색 학습` → 이름·허용 범위 정하기. 색 블록 목록에 `★ 내 색` 으로 나타남
+  - **학습 방법 안내** 탭: AI가 배우는 원리(사진 → 숫자 1,024개 → 가장 비슷한 학습 사진 7장으로 판단), 사물 학습 5단계·색 학습 4단계, 잘 배우게 하는 요령, 예제 아이디어 (5개 언어)
+  - 학습 내용은 프로젝트 파일과 함께 저장되고, `Python용 학습 파일 저장`으로 받은 .json 을 Python에서 `load_learning('파일.json')` 으로 그대로 씁니다
 - **오류 신고**: 상단 깃발 버튼 또는 콘솔의 오류 줄에서 robot-league@naver.com 으로 진단 정보와 함께 보낼 수 있습니다
 - **저장**: 브라우저에 자동 저장, `.wedo.json` 파일로 내보내기/열기
 - 단축키: `Ctrl+Enter` 실행, `Esc` 정지
@@ -50,6 +55,7 @@ Web Bluetooth는 **https** 주소나 `http://localhost` 에서만 동작합니�
 pip install bleak
 pip install pynput        # 키보드 블록을 쓴 경우에만
 pip install mediapipe opencv-python   # AI 카메라 블록을 쓴 경우에만 (처음 실행 때 모델 자동 다운로드, Q 로 카메라 창 닫기)
+# 학습한 사물을 쓴 경우: 'Python용 학습 파일 저장'으로 받은 *_learning.json 을 .py 옆에 두기
 python 내프로젝트.py      # 같은 폴더에 wedo2.py 가 있어야 합니다
 ```
 macOS에서 키보드 블록을 쓰려면 터미널에 '손쉬운 사용(입력 모니터링)' 권한이 필요합니다.
@@ -76,7 +82,7 @@ python3 build.py     # index.html, wedo2.py 다시 생성
 | `src/index.html` | 화면 구조 · 스타일 |
 | `src/i18n.js` | 5개 언어 번역표 (화면·블록·도움말) |
 | `src/blocks.js` | 워드블럭 정의 + JavaScript/Python 코드 생성기 |
-| `src/camera.js` | AI 카메라: 스켈레톤·손 모양·사물·색깔 인식과 화면 그리기 |
+| `src/camera.js` | AI 카메라: 스켈레톤·손 모양·사물·색깔 인식, 사물 학습(특징 벡터 + 최근접 이웃)·색 학습, 화면 그리기 |
 | `src/hub.js` | WeDo 2.0 Web Bluetooth 드라이버, 가상 허브, 실행 런타임 |
 | `src/app.js` | 툴박스, 저장, Python 보기, 키보드·변수 모니터 등 UI |
 | `src/wedo2.py` | PC용 Python 라이브러리 원본 |

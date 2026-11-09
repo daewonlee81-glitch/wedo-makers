@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -109,6 +109,10 @@
           B('wedo_cam_object_seen', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_pos', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_count', null, { fields: { OBJ: 'person' } }),
           { kind: 'label', text: '🎨 ' + t('cam_m_color') },
           B('wedo_cam_color_seen'), B('wedo_cam_color_pos'),
+          { kind: 'label', text: '🧠 ' + t('cam_m_learn') },
+          { kind: 'button', text: t('learn_btn'), callbackkey: 'WEDO_LEARN' },
+          B('wedo_cam_learned_is'), B('wedo_cam_learned_name'), B('wedo_cam_learned_conf'),
+          B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_learned_is' } } }),
           { kind: 'sep', gap: 20 },
           B('wedo_motor_power', { POWER: { block: { type: 'wedo_cam_hand_pos', fields: { AXIS: 'y' } } } }, { fields: { PORT: '1' } }),
           B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_gesture', fields: { G: 'Closed_Fist' } } } })] },
@@ -144,6 +148,7 @@
     });
     ws.addChangeListener(Blockly.Events.disableOrphans);
     // 변수 분류: 숫자를 바로 넣을 수 있게
+    ws.registerButtonCallback('WEDO_LEARN', () => { ensureDefaultClasses(); openLearn('obj'); });
     ws.registerButtonCallback('WEDO_CREATE_VAR', (btn) => Blockly.Variables.createVariableButtonHandler(btn.getTargetWorkspace(), null, ''));
     ws.registerToolboxCategoryCallback('WEDO_VARIABLE', (w) => {
       const items = [{ kind: 'button', text: t('var_create'), callbackkey: 'WEDO_CREATE_VAR' }];
@@ -195,6 +200,7 @@
 
   /* ---------- 저장/불러오기 ---------- */
   function loadProject(obj, name) {
+    cam.importLearning(obj.learning || null); // 학습 내용을 먼저 (블록 목록이 학습한 이름을 쓰므로)
     createWorkspace(obj.workspace || obj);
     if (name || obj.name) $('#projName').value = name || obj.name;
     setTimeout(() => $('#zFit').onclick(), 30);
@@ -202,7 +208,9 @@
     return true;
   }
   function currentProject() {
-    return { app: 'wedomakers', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
+    const p = { app: 'wedomakers', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
+    if (cam.hasLearning()) p.learning = cam.exportLearning();
+    return p;
   }
   function autosave() { try { localStorage.setItem(STORE_KEY, JSON.stringify(currentProject())); } catch (e) { /* 저장소 없음 */ } }
 
@@ -283,10 +291,21 @@
     window.WEDO_GEN.resetSeq();
     let body = python.pythonGenerator.workspaceToCode(ws).replace(/\n{3,}/g, '\n\n').trim();
     const name = $('#projName').value.replace(/\n/g, ' ');
-    const head = `# ${name}\n# ${t('py_head1')}\n# ${t('py_head2')}\n\nfrom wedo2 import *\n`;
+    let head = `# ${name}\n# ${t('py_head1')}\n# ${t('py_head2')}\n\nfrom wedo2 import *\n`;
+    // 학습한 사물·색을 쓰면 Python 에서도 같은 학습 내용을 불러온다
+    const used = ws.getAllBlocks(false).filter((b) => b.isEnabled());
+    const usesLearned = used.some((b) => /^wedo_cam_learned_/.test(b.type));
+    const colorIds = new Set(used.map((b) => (b.getField('COLOR') && b.type.startsWith('wedo_cam_color') ? b.getFieldValue('COLOR') : '')).filter((v) => v.startsWith('u:')));
+    const extra = [];
+    if (usesLearned && cam.classes.length) extra.push(`load_learning('${learnFileName()}')`);
+    cam.learnedColors.filter((c) => colorIds.has('u:' + c.id)).forEach((c) => {
+      extra.push(`learn_color(${JSON.stringify(c.name)}, hue=${c.h}, hue_range=${c.hr}, min_s=${c.smin}, min_v=${c.vmin})`);
+    });
+    if (extra.length) head += '\n' + extra.join('\n') + '\n';
     if (!body) body = '# ' + t('py_empty');
     return `${head}\n${body}\n\nrun()\n`;
   }
+  function learnFileName() { return safeName($('#projName').value).replace(/\s+/g, '_') + '_learning.json'; }
   function genJS() {
     const G = javascript.javascriptGenerator;
     G.STATEMENT_PREFIX = 'W.hl(%1, __t);\n';
@@ -352,7 +371,8 @@ is_color_seen('red') / color_x('red') / color_size('red')
       `Bluetooth: ${'bluetooth' in navigator ? 'yes' : 'no'} · secure: ${window.isSecureContext}`,
       `Hub: ${hub.connected ? hub.state.name + ' · ports ' + JSON.stringify(hub.state.ports) + ' · battery ' + hub.state.battery : 'not connected'}`,
       `Page: ${location.href.split('#')[0]}`,
-      `Camera: ${cam.on ? 'on' : 'off'} · ${['pose', 'hand', 'object', 'color'].map((m) => m + '=' + cam.status(m) + (cam.errors[m] ? '(' + cam.errors[m] + ')' : '')).join(' ')}`,
+      `Learning: ${cam.classes.map((c) => c.name + '=' + c.samples.length).join(', ') || '-'} · colors ${cam.learnedColors.length} · trained ${!!cam.model}`,
+      `Camera: ${cam.on ? 'on' : 'off'} · ${['pose', 'hand', 'object', 'color', 'learn'].map((m) => m + '=' + cam.status(m) + (cam.errors[m] ? '(' + cam.errors[m] + ')' : '')).join(' ')}`,
       '', '--- console ---', ...lines
     ].join('\n');
   }
@@ -448,6 +468,10 @@ is_color_seen('red') / color_x('red') / color_size('red')
     const todo = modes.filter((m) => !cam.isReady(m));
     if (todo.length) log(t('cam_wait'), 'sys');
     await Promise.all(modes.map((m) => cam.enable(m, true)));
+    if (modes.includes('learn')) {
+      if (!cam.model && cam.canTrain()) cam.train();
+      if (!cam.model) log(t('learn_need'), 'warn');
+    }
     const failed = modes.filter((m) => cam.errors[m]);
     if (failed.length) { failed.forEach((m) => log(`${t('cam_err_model')} — ${t('cam_m_' + m)}: ${cam.errors[m]}`, 'err')); return false; }
     if (todo.length) log(t('cam_ready_log'), 'sys');
@@ -610,7 +634,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
       cb.parentElement.dataset.st = st;
       cb.parentElement.title = st === 'error' ? cam.errors[m] : '';
     });
-    const busy = ['pose', 'hand', 'object'].some((m) => cam.status(m) === 'loading');
+    const busy = ['pose', 'hand', 'object', 'learn'].some((m) => cam.status(m) === 'loading');
     $('#camStatus').textContent = !cam.on ? t('cam_off') : busy ? t('cam_loading') : `${cam.fps} fps`;
   }
   function renderCamRead() {
@@ -619,13 +643,179 @@ is_color_seen('red') / color_x('red') / color_size('red')
     if (cam.want.pose) out.push(`<span><b>${t('cam_person')}</b> ${yes(cam.personSeen())}</span>`);
     if (cam.want.hand) out.push(`<span><b>${t('cam_m_hand')}</b> ${cam.hand ? esc(t('g_' + cam.hand.gesture)) : '–'}</span>`, `<span><b>${t('cam_fingers')}</b> ${cam.hand ? cam.fingerCount() : '–'}</span>`);
     if (cam.want.object) { const names = [...new Set(cam.objects.map((o) => window.CAM_LABEL(o.name)))]; out.push(`<span><b>${t('cam_m_object')}</b> ${names.length ? esc(names.join(', ')) : '–'}</span>`); }
-    if (cam.want.color) { const cs = Object.keys(cam.colors).filter((k) => cam.colors[k].seen).map((k) => t('cc_' + k)); out.push(`<span><b>${t('cam_m_color')}</b> ${cs.length ? esc(cs.join(', ')) : '–'}</span>`); }
+    if (cam.want.color || cam.learnedColors.length) { const cs = Object.keys(cam.colors).filter((k) => cam.colors[k].seen).map((k) => (k.startsWith('u:') ? '★ ' + window.WEDO_LEARN.colorName(k) : t('cc_' + k))); out.push(`<span><b>${t('cam_m_color')}</b> ${cs.length ? esc(cs.join(', ')) : '–'}</span>`); }
+    if (cam.want.learn && cam.model) { const nm = cam.learnedName(); out.push(`<span><b>🧠</b> ${nm ? esc(nm) + ' ' + cam.pred.conf + '%' : '–'}</span>`); }
     const html = out.join('');
     if ($('#camRead').innerHTML !== html) $('#camRead').innerHTML = html;
   }
   cam.addEventListener('change', renderCam);
   setInterval(() => { if (cam.on && !camWin.hidden) renderCamRead(); }, 200);
   try { if (localStorage.getItem('wedomakers-cam')) showCamWin(true); } catch (e) {}
+
+  /* ---------- AI 학습 창 (사물 학습 · 색 학습 · 학습 방법 안내) ---------- */
+  window.WEDO_LEARN = {
+    classes: () => cam.classes,
+    colors: () => cam.learnedColors,
+    className: (id) => { const c = cam.classes.find((q) => q.id === id); return c ? c.name : ''; },
+    colorName: (id) => { const c = cam.learnedColors.find((q) => 'u:' + q.id === id); return c ? c.name : ''; }
+  };
+  const learnBg = $('#learnBg'), learnEl = learnBg.querySelector('.learn');
+  const lctx = $('#learnCanvas').getContext('2d');
+  let ltab = 'obj', learnLoop = 0;
+  function openLearn(tab) {
+    learnBg.hidden = false;
+    setLTab(tab || ltab);
+    renderLearn();
+    if (cam.on) cam.enable('learn', true);
+    const draw = () => {
+      if (learnBg.hidden) return;
+      const src = $('#camCanvas');
+      if (cam.on) lctx.drawImage(src, 0, 0, 640, 480); else { lctx.fillStyle = '#111'; lctx.fillRect(0, 0, 640, 480); }
+      learnLoop = requestAnimationFrame(draw);
+    };
+    cancelAnimationFrame(learnLoop); draw();
+  }
+  function closeLearn() { learnBg.hidden = true; cancelAnimationFrame(learnLoop); stopRec(); }
+  $('#learnClose').onclick = closeLearn;
+  learnBg.addEventListener('mousedown', (e) => { if (e.target === learnBg) closeLearn(); });
+  function setLTab(tab) {
+    ltab = tab;
+    learnBg.querySelectorAll('[data-ltab]').forEach((b) => b.classList.toggle('on', b.dataset.ltab === tab));
+    learnBg.querySelectorAll('.lpane').forEach((p) => p.classList.toggle('on', p.id === 'lp-' + tab));
+    learnEl.classList.toggle('color-tab', tab === 'color');
+    if (tab === 'guide') $('#lp-guide').innerHTML = t('guide_html');
+    if (tab === 'color' && cam.on) cam.enable('color', true);
+  }
+  learnBg.querySelectorAll('[data-ltab]').forEach((b) => (b.onclick = () => setLTab(b.dataset.ltab)));
+  async function camOnForLearn() {
+    const sup = WeCam.Camera.support();
+    if (sup !== 'ok') { toast(t(sup === 'insecure' ? 'cam_insecure' : 'cam_unsupported')); return false; }
+    try { await cam.start(); } catch (e) { toast(t('cam_denied')); return false; }
+    showCamWin(true);
+    cam.enable('learn', true);
+    if (ltab === 'color') cam.enable('color', true);
+    return true;
+  }
+  $('#learnCamOn').onclick = camOnForLearn;
+
+  // 기본 클래스: 물건 1, 물건 2, 배경
+  function ensureDefaultClasses() {
+    if (cam.classes.length) return;
+    cam.addClass(t('learn_cls_default') + ' 1'); cam.addClass(t('learn_cls_default') + ' 2'); cam.addClass(t('learn_cls_bg'));
+  }
+  let rec = null, lastSeq = 0;
+  function startRec(id, btn) {
+    stopRec();
+    if (!cam.on) { toast(t('learn_cam_needed')); return; }
+    rec = { id, btn }; btn.classList.add('rec');
+    lastSeq = cam.embSeq || 0;
+  }
+  function stopRec() { if (rec) { rec.btn.classList.remove('rec'); rec = null; renderLearn(); } }
+  cam.addEventListener('embed', () => {
+    if (rec && cam.embSeq !== lastSeq) {
+      lastSeq = cam.embSeq;
+      if (cam.addSample(rec.id)) {
+        const c = cam.classes.find((q) => q.id === rec.id);
+        const el = document.querySelector(`[data-cls="${rec.id}"]`);
+        if (c && el) { el.querySelector('.cls-count').textContent = `${c.samples.length} ${t('learn_photos')}`; }
+      }
+    }
+    if (!learnBg.hidden) renderPredict();
+  });
+  window.addEventListener('pointerup', stopRec);
+
+  function renderLearn() {
+    if (learnBg.hidden) return;
+    $('#learnCamOn').style.display = cam.on ? 'none' : '';
+    const busy = cam.status('learn') === 'loading';
+    $('#learnStatus').textContent = !cam.on ? t('learn_cam_needed') : busy ? t('cam_loading') : (cam.model ? `✓ ${t('learn_trained')}` : '');
+    // 클래스 목록
+    $('#clsList').innerHTML = cam.classes.map((c) => `
+      <div class="cls" data-cls="${c.id}">
+        <div class="cls-top"><input value="${esc(c.name)}" data-rename="${c.id}" aria-label="${t('learn_rename')}"><span class="cls-count">${c.samples.length} ${t('learn_photos')}</span></div>
+        <div class="cls-thumbs">${c.thumbs.map((u) => `<img src="${u}" alt="">`).join('')}</div>
+        <div class="cls-btns">
+          <button class="btn hold" data-hold="${c.id}">${t('learn_hold')}</button>
+          <button class="btn small" data-clear="${c.id}">${t('learn_clear')}</button>
+          <button class="btn small ghost" data-del="${c.id}">${t('learn_delete')}</button>
+        </div>
+      </div>`).join('');
+    $('#clsList').querySelectorAll('[data-hold]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); startRec(b.dataset.hold, b); }));
+    $('#clsList').querySelectorAll('[data-clear]').forEach((b) => (b.onclick = () => cam.clearSamples(b.dataset.clear)));
+    $('#clsList').querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => Blockly.dialog.confirm(t('learn_delete') + '?', (ok) => ok && cam.removeClass(b.dataset.del))));
+    $('#clsList').querySelectorAll('[data-rename]').forEach((inp) => (inp.onchange = () => { cam.renameClass(inp.dataset.rename, inp.value.trim() || '?'); refreshLearnBlocks(); }));
+    const total = cam.classes.reduce((a, c) => a + c.samples.length, 0);
+    $('#trainBtn').disabled = !cam.canTrain();
+    $('#trainInfo').textContent = !cam.canTrain() ? t('learn_need') : cam.model ? `✓ ${t('learn_trained')} — ${cam.classes.filter((c) => c.samples.length >= 3).length} × ${total} ${t('learn_photos')}` : t('learn_retrain');
+    // 색 목록
+    $('#colorList').innerHTML = cam.learnedColors.length ? cam.learnedColors.map((c) => `
+      <div class="lcolor" data-col="${c.id}">
+        <div class="sw" style="background:${c.rgb}"></div>
+        <div class="row"><input type="text" value="${esc(c.name)}" data-cname="${c.id}" aria-label="${t('learn_color_name')}"><span class="found" data-found="${c.id}"></span>
+          <button class="btn small ghost" data-cdel="${c.id}">${t('learn_cdelete')}</button></div>
+        <div class="row"><span class="muted">${t('learn_color_range')}</span><input type="range" min="4" max="40" value="${c.hr}" data-crange="${c.id}"><span class="muted" data-crv="${c.id}">±${c.hr}°</span></div>
+      </div>`).join('') : `<p class="muted">${t('learn_color_empty')}</p>`;
+    $('#colorList').querySelectorAll('[data-cname]').forEach((inp) => (inp.onchange = () => { cam.updateColor(inp.dataset.cname, { name: inp.value.trim() || '?' }); refreshLearnBlocks(); }));
+    $('#colorList').querySelectorAll('[data-cdel]').forEach((b) => (b.onclick = () => cam.removeColor(b.dataset.cdel)));
+    $('#colorList').querySelectorAll('[data-crange]').forEach((r) => (r.oninput = () => {
+      const c = cam.learnedColors.find((q) => q.id === r.dataset.crange); if (!c) return;
+      c.hr = Number(r.value); document.querySelector(`[data-crv="${c.id}"]`).textContent = `±${c.hr}°`; scheduleSave();
+    }));
+    renderPredict();
+  }
+  function renderPredict() {
+    if (learnBg.hidden) return;
+    const box = $('#learnPredict');
+    if (ltab === 'color') {
+      cam.learnedColors.forEach((c) => {
+        const el = document.querySelector(`[data-found="${c.id}"]`); if (!el) return;
+        const seen = cam.colorSeen('u:' + c.id);
+        el.textContent = seen ? `✓ ${t('learn_color_found')} (${cam.colorPos('u:' + c.id, 'size')}%)` : t('learn_color_missing');
+        el.classList.toggle('yes', seen);
+      });
+      box.innerHTML = '';
+      return;
+    }
+    if (!cam.model) { box.innerHTML = `<p class="muted">${t('learn_test_hint')}</p>`; return; }
+    const p = cam.pred;
+    box.innerHTML = `<b>${t('learn_result')}</b>` + cam.classes.map((c) => {
+      const v = p ? (p.scores[c.id] || 0) : 0;
+      return `<div class="pbar ${p && p.top === c.id && v >= WeCam.CONF_MIN ? 'top' : ''}"><span class="nm">${esc(c.name)}</span><span class="tr"><i style="width:${v}%"></i></span><span class="pc">${v}%</span></div>`;
+    }).join('');
+  }
+  setInterval(() => { if (!learnBg.hidden && ltab === 'color') renderPredict(); }, 250);
+  $('#addCls').onclick = () => { cam.addClass(`${t('learn_cls_default')} ${cam.classes.length + 1}`); };
+  $('#trainBtn').onclick = () => { if (cam.train()) { toast(`✓ ${t('learn_trained')}`); log(`🧠 ${t('learn_trained')}: ${cam.classes.map((c) => `${c.name}(${c.samples.length})`).join(', ')}`, 'sys'); } };
+  $('#takeColor').onclick = async () => {
+    if (!cam.on && !(await camOnForLearn())) return;
+    const smp = cam.sampleCenterColor();
+    if (!smp || !smp.ok) { $('#colorMsg').hidden = false; $('#colorMsg').textContent = t('learn_color_fail'); return; }
+    $('#colorMsg').hidden = true;
+    Blockly.dialog.prompt(t('learn_color_name'), `${t('learn_color_default')} ${cam.learnedColors.length + 1}`, (name) => {
+      if (name == null) return;
+      cam.addColor(name.trim() || t('learn_color_default'), smp);
+      cam.enable('color', true);
+      refreshLearnBlocks();
+    });
+  };
+  $('#exportLearn').onclick = () => download(learnFileName(), JSON.stringify(cam.exportLearning()), 'application/json');
+  $('#importLearn').onclick = () => $('#learnFile').click();
+  $('#learnFile').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { cam.importLearning(JSON.parse(await f.text())); refreshLearnBlocks(); toast(t('opened')); } catch (err) { toast(t('open_fail')); }
+    e.target.value = '';
+  };
+  // 학습 이름이 바뀌면 블록 글씨와 Python 코드도 바로 바꾼다
+  function refreshLearnBlocks() {
+    if (!ws) return;
+    ws.getAllBlocks(false).forEach((b) => { ['CLS', 'COLOR'].forEach((f) => { const fld = b.getField(f); if (fld && fld instanceof Blockly.FieldDropdown) { try { fld.getOptions(false); fld.forceRerender(); } catch (e) {} } }); });
+    refreshCode();
+  }
+  let saveT;
+  function scheduleSave() { clearTimeout(saveT); saveT = setTimeout(() => { autosave(); refreshCode(); }, 400); }
+  cam.addEventListener('learning', (e) => { if (e.detail !== 'samples') renderLearn(); scheduleSave(); });
+  cam.addEventListener('change', renderLearn);
+  $('#btnLearn').onclick = () => { ensureDefaultClasses(); openLearn(); };
 
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');
@@ -737,7 +927,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
       const nm = $('#projName').value;
       ['proj_example', 'proj_new', 'proj_default'].forEach((k) => { if (I18N.all(k).includes(nm)) $('#projName').value = t(k); });
       createWorkspace(state);
-      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); autosave();
+      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); renderLearn(); if (ltab === 'guide') setLTab('guide'); autosave();
     }
   }
   langSel.onchange = () => { rt.stop('user'); setLanguage(langSel.value); };

@@ -39,6 +39,8 @@ __all__ = [
     "is_hand_seen", "is_gesture", "finger_count", "hand_x", "hand_y",
     "is_object_seen", "object_x", "object_y", "object_count",
     "is_color_seen", "color_x", "color_y", "color_size",
+    # AI 학습
+    "load_learning", "learn_color", "is_learned", "learned_name", "learned_confidence",
 ]
 
 # ---------------------------------------------------------------- 상수
@@ -378,7 +380,11 @@ _MODEL_URLS = {
     "pose": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
     "hand": "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
     "object": "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite",
+    "learn": "https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite",
 }
+_KNN_K, _CONF_MIN = 7, 60
+_learn_classes = []   # [(name, numpy 배열 N×D)]
+_learn_colors = {}    # name → (hue, hue_range, min_s, min_v)
 _BODY = {"NOSE": 0, "LEFT_SHOULDER": 11, "RIGHT_SHOULDER": 12, "LEFT_ELBOW": 13, "RIGHT_ELBOW": 14,
          "LEFT_WRIST": 15, "RIGHT_WRIST": 16, "LEFT_HIP": 23, "RIGHT_HIP": 24, "LEFT_KNEE": 25,
          "RIGHT_KNEE": 26, "LEFT_ANKLE": 27, "RIGHT_ANKLE": 28}
@@ -408,6 +414,7 @@ class _Camera:
         self.thread = None
         self.closed = False
         self.done = set()   # 한 번 이상 처리된 기능
+        self.pred = None     # (클래스 이름, 확신도 %, {이름: %})
 
     # --- 준비 ---
     def _libs(self):
@@ -452,6 +459,9 @@ class _Camera:
                 elif mode == "hand":
                     self.tasks[mode] = vision.GestureRecognizer.create_from_options(
                         vision.GestureRecognizerOptions(base_options=base, running_mode=video, num_hands=1))
+                elif mode == "learn":
+                    self.tasks[mode] = vision.ImageEmbedder.create_from_options(
+                        vision.ImageEmbedderOptions(base_options=base, running_mode=video, l2_normalize=True, quantize=False))
                 else:
                     self.tasks[mode] = vision.ObjectDetector.create_from_options(
                         vision.ObjectDetectorOptions(base_options=base, running_mode=video,
@@ -481,7 +491,7 @@ class _Camera:
             last_ts = ts
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            heavy = [m for m in ("pose", "hand", "object") if m in self.want]
+            heavy = [m for m in ("pose", "hand", "object", "learn") if m in self.want]
             pick = heavy[turn % len(heavy)] if heavy else None
             turn += 1
             try:
@@ -497,6 +507,11 @@ class _Camera:
                     else:
                         self.hand = None
                     self.done.add("hand")
+                elif pick == "learn":
+                    r = self.tasks["learn"].embed_for_video(image, ts)
+                    if r.embeddings:
+                        self.pred = _knn(np.asarray(r.embeddings[0].embedding, dtype=np.float32))
+                    self.done.add("learn")
                 elif pick == "object":
                     r = self.tasks["object"].detect_for_video(image, ts)
                     h, w = frame.shape[:2]
@@ -511,13 +526,18 @@ class _Camera:
                     self.done.add("object")
             except Exception:  # noqa: BLE001
                 pass
-            if "color" in self.want:
+            if "color" in self.want or _learn_colors:
                 small = cv2.flip(cv2.resize(frame, (80, 60)), 1)
                 hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV).astype(np.float32)
                 H, S, V = hsv[..., 0] * 2, hsv[..., 1] / 255, hsv[..., 2] / 255
                 ys, xs = np.mgrid[0:60, 0:80]
                 out = {}
-                for k, rule in _COLOR_RULES.items():
+                rules = dict(_COLOR_RULES)
+                for nm, (hue, hr, smin, vmin) in _learn_colors.items():
+                    dist = np.abs(H - hue) % 360
+                    dist = np.minimum(dist, 360 - dist)
+                    rules[nm] = (lambda d, r, a, b: (lambda h, s, v: (d <= r) & (s >= a) & (v >= b)))(dist, hr, smin, vmin)
+                for k, rule in rules.items():
                     m = rule(H, S, V)
                     n = int(m.sum())
                     size = round(n / 4800 * 100, 1)
@@ -547,6 +567,9 @@ class _Camera:
             for a, b in _HAND_LINES:
                 cv2.line(img, P(lm[a]), P(lm[b]), (10, 214, 255), 2)
             cv2.putText(img, self.hand[1], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (10, 214, 255), 2)
+        if self.pred and self.pred[0]:
+            cv2.putText(img, f"{self.pred[0]} {self.pred[1]}%", (10, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
+                        (237, 58, 124) if self.pred[1] >= _CONF_MIN else (160, 160, 160), 2)
         for o in self.objects:
             x, y, bw, bh = o["box"]
             x = w - x - bw
@@ -708,6 +731,7 @@ def object_count(name):
 
 
 def _color(name):
+    """기본 색 'red'·'green'·'blue'·'yellow' 또는 learn_color 로 등록한 이름"""
     _cam.need("color")
     return _cam.colors.get(name, {"seen": False, "x": -1, "y": -1, "size": 0})
 
@@ -727,6 +751,79 @@ def color_y(name):
 
 def color_size(name):
     return _color(name)["size"]
+
+
+
+# ---------------------------------------------------------------- AI 학습 (위두 메이커스 '학습 파일'과 같은 형식)
+def load_learning(path):
+    """위두 메이커스의 'Python용 학습 파일 저장' 으로 받은 .json 을 불러온다 (사물 학습 + 학습한 색)."""
+    import base64
+    import json
+    import os
+    import numpy as np
+    if not os.path.isabs(path):
+        main = sys.modules.get("__main__")
+        base = os.path.dirname(os.path.abspath(getattr(main, "__file__", "") or "."))
+        if os.path.exists(os.path.join(base, path)):
+            path = os.path.join(base, path)
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    _learn_classes.clear()
+    for c in data.get("classes", []):
+        rows = []
+        for b64 in c.get("samples", []):
+            v = np.frombuffer(base64.b64decode(b64), dtype=np.int8).astype(np.float32) / 127
+            n = float(np.linalg.norm(v)) or 1.0
+            rows.append(v / n)
+        if len(rows) >= 3:
+            _learn_classes.append((c["name"], np.stack(rows)))
+    for c in data.get("colors", []):
+        learn_color(c["name"], c["h"], c["hr"], c["smin"], c["vmin"])
+    print(f"학습 파일을 불러왔습니다: 사물 {len(_learn_classes)}개, 색 {len(data.get('colors', []))}개")
+
+
+def learn_color(name, hue, hue_range=14, min_s=0.3, min_v=0.2):
+    """학습한 색 등록 — hue 0~360, hue_range ±도, min_s·min_v 0~1"""
+    _learn_colors[name] = (float(hue), float(hue_range), float(min_s), float(min_v))
+
+
+def _knn(e):
+    import numpy as np
+    if not _learn_classes:
+        return None
+    names, sims = [], []
+    for nm, mat in _learn_classes:
+        sims.append(mat @ e)
+        names += [nm] * len(mat)
+    sims = np.concatenate(sims)
+    k = min(_KNN_K, len(sims))
+    top = np.argsort(-sims)[:k]
+    votes, total = {}, {}
+    for i in top:
+        votes[names[i]] = votes.get(names[i], 0) + 1
+        total[names[i]] = total.get(names[i], 0) + float(sims[i])
+    best = max(votes, key=lambda n: (votes[n], total[n]))
+    scores = {nm: round(votes.get(nm, 0) / k * 100) for nm, _ in _learn_classes}
+    return best, scores[best], scores
+
+
+def is_learned(name):
+    """학습한 사물이 name 인가? (확신도 60% 이상)"""
+    _cam.need("learn")
+    p = _cam.pred
+    return bool(p and p[0] == name and p[1] >= _CONF_MIN)
+
+
+def learned_name():
+    _cam.need("learn")
+    p = _cam.pred
+    return p[0] if p and p[1] >= _CONF_MIN else ""
+
+
+def learned_confidence(name):
+    _cam.need("learn")
+    p = _cam.pred
+    return p[2].get(name, 0) if p else 0
 
 
 # ---------------------------------------------------------------- 이벤트 데코레이터

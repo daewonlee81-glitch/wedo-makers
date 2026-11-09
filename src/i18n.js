@@ -351,6 +351,190 @@
       '<p class="muted">AI カメラのブロックを使ったら <code>pip install mediapipe opencv-python</code> も必要です。初回にモデルを自動で取得し、カメラ画面は <kbd>Q</kbd> で閉じます。</p>',
       '<p class="muted">若使用了 AI 摄像头积木，还需 <code>pip install mediapipe opencv-python</code>。首次运行会自动下载模型，按 <kbd>Q</kbd> 关闭摄像头窗口。</p>',
       '<p class="muted">Si usaste bloques de cámara IA, ejecuta también <code>pip install mediapipe opencv-python</code>. Los modelos se descargan la primera vez; cierra la ventana con <kbd>Q</kbd>.</p>'],
+
+    /* ---------- AI 학습 (사물 학습 · 색 학습) ---------- */
+    cam_m_learn: ['학습한 사물', 'Learned objects', '学習した物', '学习的物体', 'Objetos aprendidos'],
+    learn_btn: ['🧠 AI 학습하기', '🧠 Teach the AI', '🧠 AI に教える', '🧠 训练 AI', '🧠 Enseñar a la IA'],
+    learn_title: ['AI 학습', 'Teach the AI', 'AI 学習', 'AI 训练', 'Enseñar a la IA'],
+    learn_tab_obj: ['사물 학습', 'Object learning', '物の学習', '物体学习', 'Aprender objetos'],
+    learn_tab_color: ['색 학습', 'Color learning', '色の学習', '颜色学习', 'Aprender colores'],
+    learn_tab_guide: ['학습 방법 안내', 'How to teach', '学習のしかた', '训练方法', 'Cómo enseñar'],
+    learn_none: ['(먼저 학습하세요)', '(teach first)', '（先に学習）', '（请先训练）', '(enseña primero)'],
+    learn_cls_default: ['물건', 'Object', '物', '物体', 'Objeto'],
+    learn_cls_bg: ['배경 (아무것도 없음)', 'Background (nothing)', '背景（なにもない）', '背景（什么都没有）', 'Fondo (nada)'],
+    learn_add_cls: ['＋ 클래스 추가', '＋ Add class', '＋ クラスを追加', '＋ 添加类别', '＋ Añadir clase'],
+    learn_hold: ['누르고 있으면 촬영', 'Hold to record', '押している間撮影', '按住拍摄', 'Mantén para grabar'],
+    learn_clear: ['사진 지우기', 'Clear photos', '写真を消す', '清除照片', 'Borrar fotos'],
+    learn_delete: ['클래스 삭제', 'Delete class', 'クラスを削除', '删除类别', 'Eliminar clase'],
+    learn_cdelete: ['색 삭제', 'Delete color', '色を削除', '删除颜色', 'Eliminar color'],
+    learn_photos: ['장', 'photos', '枚', '张', 'fotos'],
+    learn_train: ['학습시키기', 'Train', '学習させる', '开始训练', 'Entrenar'],
+    learn_trained: ['학습 완료', 'Trained', '学習完了', '训练完成', 'Entrenado'],
+    learn_retrain: ['사진이 바뀌었습니다 — 다시 학습시키세요', 'Photos changed — train again', '写真が変わりました — もう一度学習', '照片已更改 — 请重新训练', 'Las fotos cambiaron: vuelve a entrenar'],
+    learn_need: ['클래스 2개 이상에 사진을 3장 이상씩 모으면 학습할 수 있어요.', 'Collect at least 3 photos in 2 or more classes to train.', '2つ以上のクラスに3枚以上ずつ集めると学習できます。', '至少 2 个类别、每个 3 张以上照片才能训练。', 'Reúne al menos 3 fotos en 2 o más clases para entrenar.'],
+    learn_result: ['지금 보이는 것', 'What the AI sees now', 'いま見えているもの', '现在看到的', 'Lo que ve la IA ahora'],
+    learn_test_hint: ['학습시킨 뒤 카메라 앞에 물건을 보여 주면 확신도가 막대로 표시됩니다.', 'After training, show an object to the camera to see the confidence bars.', '学習後、カメラに物を見せると確信度がバーで表示されます。', '训练后把物体给摄像头看，就会显示置信度条。', 'Tras entrenar, enseña un objeto a la cámara para ver las barras de confianza.'],
+    learn_cam_needed: ['학습하려면 카메라를 켜세요.', 'Turn on the camera to teach.', '学習するにはカメラをオンにしてください。', '请先打开摄像头再训练。', 'Enciende la cámara para enseñar.'],
+    learn_export: ['Python용 학습 파일 저장', 'Save learning file for Python', 'Python 用学習ファイルを保存', '保存 Python 用训练文件', 'Guardar archivo para Python'],
+    learn_import: ['학습 파일 불러오기', 'Load learning file', '学習ファイルを読み込む', '载入训练文件', 'Cargar archivo de aprendizaje'],
+    learn_saved_note: ['학습 내용은 프로젝트와 함께 저장됩니다.', 'Learning is saved together with the project.', '学習内容はプロジェクトと一緒に保存されます。', '训练内容会和项目一起保存。', 'Lo aprendido se guarda con el proyecto.'],
+    learn_color_center: ['가운데 네모에 색 물건을 가득 채우고 누르세요', 'Fill the center box with the colored object, then press', '真ん中の四角に色の物をいっぱいに入れて押してください', '让彩色物体填满中间方框后按下', 'Llena el cuadro central con el objeto de color y pulsa'],
+    learn_color_take: ['가운데 색 학습', 'Learn the center color', '真ん中の色を学習', '学习中间的颜色', 'Aprender el color central'],
+    learn_color_fail: ['색이 뚜렷하지 않습니다. 흰색·검정·회색은 학습할 수 없어요. 선명한 색 물건을 가까이 대 보세요.', 'Color is not clear. White, black and gray cannot be learned — hold a vivid object closer.', '色がはっきりしません。白・黒・灰色は学習できません。鮮やかな色の物を近づけて。', '颜色不明显。白、黑、灰无法学习，请把鲜艳的物体靠近。', 'El color no es claro. Blanco, negro y gris no se pueden aprender: acerca un objeto de color vivo.'],
+    learn_color_name: ['색 이름', 'Color name', '色の名前', '颜色名称', 'Nombre del color'],
+    learn_color_default: ['내 색', 'My color', 'わたしの色', '我的颜色', 'Mi color'],
+    learn_color_range: ['허용 범위', 'Tolerance', '許容範囲', '容差', 'Tolerancia'],
+    learn_color_found: ['화면에서 찾음', 'found on screen', '画面で見つけた', '在画面中找到', 'encontrado'],
+    learn_color_missing: ['안 보임', 'not seen', '見えない', '未看到', 'no visible'],
+    learn_color_empty: ['아직 학습한 색이 없습니다.', 'No learned colors yet.', 'まだ学習した色はありません。', '还没有学习的颜色。', 'Aún no hay colores aprendidos.'],
+    learn_rename: ['이름 바꾸기', 'Rename', '名前を変える', '重命名', 'Renombrar'],
+    b_cam_learned_is: ['학습한 사물이 %1 인가?', 'learned object is %1 ?', '学習した物が %1 ？', '学习的物体是 %1？', '¿objeto aprendido es %1?'],
+    b_cam_learned_name: ['학습한 사물 이름', 'learned object name', '学習した物の名前', '学习的物体名称', 'nombre del objeto aprendido'],
+    b_cam_learned_conf: ['%1 확신도 (%%)', '%1 confidence (%%)', '%1 の確信度（%%）', '%1 置信度（%%）', 'confianza de %1 (%%)'],
+    tt_learned: ['AI 학습 창에서 가르친 사물입니다. 확신도 60% 이상일 때 참입니다.', 'An object you taught in the Teach window. True when confidence is 60% or more.', '学習ウィンドウで教えた物です。確信度 60% 以上で真。', '在训练窗口中教过的物体。置信度 60% 以上时为真。', 'Un objeto enseñado en la ventana de aprendizaje. Verdadero con confianza ≥ 60%.'],
+    tt_conf: ['0~100. 비슷한 학습 사진 7장 중 몇 장이 이 클래스인지', '0–100: how many of the 7 most similar training photos belong to this class', '0〜100：よく似た学習写真7枚のうち何枚がこのクラスか', '0~100：最相似的 7 张训练照片中有几张属于此类', '0–100: cuántas de las 7 fotos más parecidas son de esta clase'],
+    tt_learned_color: ['★ 표시는 색 학습으로 가르친 색입니다.', '★ marks colors you taught in Color learning.', '★ は色の学習で教えた色です。', '★ 表示通过颜色学习教的颜色。', '★ indica colores enseñados en «Aprender colores».'],
+    guide_html: [
+`<div class="guide">
+<h4>🧠 AI는 어떻게 배울까요?</h4>
+<p>AI는 사진 한 장을 <b>숫자 1,024개(특징)</b>로 바꿉니다. 학습이란 "이 숫자들은 <b>컵</b>이야" 하고 예시를 많이 알려 주는 것이에요. 새 사진이 들어오면 AI는 <b>가장 비슷한 학습 사진 7장</b>을 찾아 그중 많은 쪽으로 답합니다(최근접 이웃 방법). 그래서 <b>좋은 예시를 많이</b> 줄수록 똑똑해집니다.</p>
+<h4>📦 사물 학습 — 5단계</h4>
+<ol>
+<li><b>무엇을 구분할지 정하기</b> — 예: <i>빨간 컵 / 파란 공 / 배경</i>. <b>배경(아무것도 없음)</b> 클래스는 꼭 두세요. 그래야 물건이 없을 때 "없다"고 답합니다.</li>
+<li><b>사진 모으기</b> — 클래스마다 <b>누르고 있으면 촬영</b>을 눌러 30~50장 모읍니다. 물건을 <b>돌리고, 가까이·멀리, 왼쪽·오른쪽</b>으로 움직이며 찍으세요.</li>
+<li><b>학습시키기</b> — 버튼을 누르면 바로 학습됩니다.</li>
+<li><b>시험하기</b> — 물건을 보여 주며 확신도 막대를 확인합니다. 틀리게 답하면 그 상황의 사진을 <b>더 찍고 다시 학습</b>시키세요.</li>
+<li><b>블록으로 쓰기</b> — <code>학습한 사물이 [빨간 컵] 인가?</code> 를 <code>○ 이 될 때</code> 나 <code>만약</code> 에 넣어 로봇을 움직입니다.</li>
+</ol>
+<p class="tip">💡 <b>잘 배우게 하는 법</b>: 클래스마다 사진 수를 비슷하게 · 실제로 쓸 장소와 조명에서 학습 · 배경은 단순하게 · 손이 함께 찍히면 AI가 "손"을 배울 수 있으니 <b>배경 클래스에도 손을 넣어</b> 찍기</p>
+<h4>🎨 색 학습 — 4단계</h4>
+<ol>
+<li>색 물건(공, 색종이 등)을 카메라 화면 <b>가운데 네모 안에 가득</b> 차게 댑니다.</li>
+<li><b>가운데 색 학습</b>을 누르고 이름을 정합니다(예: <i>형광 연두</i>).</li>
+<li><b>허용 범위</b>를 조절합니다. 너무 넓으면 비슷한 다른 색까지 잡히고, 너무 좁으면 그림자 진 곳을 놓칩니다. 화면에 동그라미가 물건 위에 잘 붙는지 보며 맞추세요.</li>
+<li>블록의 색 목록에 <b>★ 형광 연두</b>가 생깁니다. <code>[★ 형광 연두] 색의 x 위치</code> 로 공을 따라가는 로봇을 만들어 보세요.</li>
+</ol>
+<p class="tip">💡 흰색·검정·회색은 "색깔"이 없어서 학습이 어렵습니다. 선명한 색일수록 잘 찾고, 조명이 바뀌면 다시 학습하세요.</p>
+<h4>🤖 예제 아이디어</h4>
+<ul>
+<li><b>분류 로봇</b>: <code>학습한 사물이 [빨간 컵] 이 될 때</code> → 포트 1 모터 시계방향 1초, <code>[파란 공]</code> 이면 반시계방향</li>
+<li><b>색 따라가기</b>: 무한 반복 — <code>[★ 내 색] 색의 x 위치</code> 가 40보다 작으면 왼쪽, 60보다 크면 오른쪽으로 모터 방향 바꾸기</li>
+<li><b>확신도 게이지</b>: <code>모터 파워를 [[물건 1] 확신도] % 로 정하기</code> — AI가 확실할수록 빨리 돕니다</li>
+</ul>
+<p class="muted">학습 내용은 프로젝트에 함께 저장됩니다. PC에서 Python으로 실행하려면 <b>Python용 학습 파일 저장</b>으로 받은 파일을 .py 파일 옆에 두세요.</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 How does the AI learn?</h4>
+<p>The AI turns each photo into <b>1,024 numbers (features)</b>. Teaching means giving many examples: "these numbers are a <b>cup</b>". For a new photo the AI finds the <b>7 most similar training photos</b> and answers with the class most of them belong to (nearest-neighbour method). <b>More good examples</b> make it smarter.</p>
+<h4>📦 Object learning — 5 steps</h4>
+<ol>
+<li><b>Decide what to tell apart</b> — e.g. <i>red cup / blue ball / background</i>. Always keep a <b>Background (nothing)</b> class so the AI can say "nothing is there".</li>
+<li><b>Collect photos</b> — for each class, press <b>Hold to record</b> to collect 30–50 photos. <b>Turn</b> the object, move it <b>closer/farther and left/right</b>.</li>
+<li><b>Train</b> — press the button; training is instant.</li>
+<li><b>Test</b> — show the object and watch the confidence bars. If it is wrong, <b>record more photos</b> of that situation and train again.</li>
+<li><b>Use blocks</b> — put <code>learned object is [red cup]?</code> in <code>when ○</code> or <code>if</code> to move the robot.</li>
+</ol>
+<p class="tip">💡 <b>Tips</b>: similar number of photos per class · teach in the same place and lighting you will use · keep the background simple · if your hand is in the photos the AI may learn "hand", so <b>also record your hand in the Background class</b></p>
+<h4>🎨 Color learning — 4 steps</h4>
+<ol>
+<li>Hold a colored object (ball, paper…) so it <b>fills the center box</b> of the camera view.</li>
+<li>Press <b>Learn the center color</b> and give it a name (e.g. <i>neon green</i>).</li>
+<li>Adjust the <b>tolerance</b>: too wide picks up similar colors, too narrow misses shadows. Check that the dot sticks to the object.</li>
+<li><b>★ neon green</b> appears in the color lists of the blocks. Try <code>color [★ neon green] x</code> to build a ball-following robot.</li>
+</ol>
+<p class="tip">💡 White, black and gray have no hue, so they are hard to learn. Vivid colors work best; teach again when the lighting changes.</p>
+<h4>🤖 Project ideas</h4>
+<ul>
+<li><b>Sorting robot</b>: <code>when learned object is [red cup]</code> → port 1 motor clockwise 1 s; <code>[blue ball]</code> → counterclockwise</li>
+<li><b>Color follower</b>: forever — if <code>color [★ my color] x</code> &lt; 40 turn left, &gt; 60 turn right</li>
+<li><b>Confidence gauge</b>: <code>set motor power to [[Object 1] confidence] %</code> — the surer the AI, the faster it spins</li>
+</ul>
+<p class="muted">Learning is saved with the project. To run with Python on a PC, put the file from <b>Save learning file for Python</b> next to your .py file.</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 AI はどうやって学ぶの？</h4>
+<p>AI は写真を <b>1,024 個の数（特徴）</b> に変えます。学習とは「この数は<b>コップ</b>だよ」と例をたくさん教えること。新しい写真が来ると、<b>いちばん似ている学習写真 7 枚</b>を探し、多い方で答えます（最近傍法）。<b>よい例をたくさん</b>見せるほど賢くなります。</p>
+<h4>📦 物の学習 — 5 ステップ</h4>
+<ol>
+<li><b>何を見分けるか決める</b> — 例：<i>赤いコップ／青いボール／背景</i>。<b>背景（なにもない）</b>クラスは必ず作りましょう。</li>
+<li><b>写真を集める</b> — クラスごとに<b>押している間撮影</b>で 30〜50 枚。物を<b>回したり、近づけたり遠ざけたり、左右に動かしたり</b>して撮ります。</li>
+<li><b>学習させる</b> — ボタンを押すとすぐに学習します。</li>
+<li><b>試す</b> — 物を見せて確信度のバーを確認。まちがえたら、その場面の写真を<b>追加してもう一度学習</b>。</li>
+<li><b>ブロックで使う</b> — <code>学習した物が [赤いコップ] ？</code> を <code>○ になったとき</code> や <code>もし</code> に入れてロボットを動かします。</li>
+</ol>
+<p class="tip">💡 <b>コツ</b>：クラスごとの枚数をそろえる・実際に使う場所と明るさで学習・背景はシンプルに・手が写ると AI が「手」を覚えるので<b>背景クラスにも手を入れて</b>撮る</p>
+<h4>🎨 色の学習 — 4 ステップ</h4>
+<ol>
+<li>色のついた物を画面の<b>真ん中の四角いっぱい</b>に入れます。</li>
+<li><b>真ん中の色を学習</b>を押して名前をつけます（例：<i>蛍光グリーン</i>）。</li>
+<li><b>許容範囲</b>を調整。広すぎると似た色まで、せますぎると影の部分を見のがします。</li>
+<li>ブロックの色リストに <b>★ 蛍光グリーン</b> が出ます。<code>[★ 蛍光グリーン] 色の x</code> でボールを追うロボットを作ろう。</li>
+</ol>
+<p class="tip">💡 白・黒・灰色は色味がないので学習しにくいです。鮮やかな色ほどよく見つかります。明るさが変わったら学習し直しましょう。</p>
+<h4>🤖 作品アイデア</h4>
+<ul>
+<li><b>仕分けロボット</b>：<code>学習した物が [赤いコップ] になったとき</code> → モーター時計回り 1 秒、<code>[青いボール]</code> なら反時計回り</li>
+<li><b>色追いかけ</b>：ずっと — <code>[★ わたしの色] 色の x</code> が 40 より小さければ左、60 より大きければ右へ</li>
+<li><b>確信度メーター</b>：<code>モーターのパワーを [[物 1] の確信度] % にする</code></li>
+</ul>
+<p class="muted">学習内容はプロジェクトと一緒に保存されます。PC の Python で動かすときは <b>Python 用学習ファイルを保存</b> したファイルを .py の横に置いてください。</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 AI 是怎样学习的？</h4>
+<p>AI 会把每张照片变成 <b>1,024 个数字（特征）</b>。训练就是告诉它很多例子：“这些数字是<b>杯子</b>”。来了新照片，AI 会找出<b>最相似的 7 张训练照片</b>，按多数回答（最近邻方法）。给出<b>越多好例子</b>，它就越聪明。</p>
+<h4>📦 物体学习 — 5 步</h4>
+<ol>
+<li><b>决定要区分什么</b> — 例：<i>红杯子 / 蓝球 / 背景</i>。一定要保留<b>背景（什么都没有）</b>类别。</li>
+<li><b>收集照片</b> — 每个类别按住<b>按住拍摄</b>收集 30~50 张。<b>转动</b>物体，<b>远近、左右</b>移动着拍。</li>
+<li><b>开始训练</b> — 按下按钮立即完成训练。</li>
+<li><b>测试</b> — 展示物体并查看置信度条。答错时，<b>多拍几张那种情况的照片再训练</b>。</li>
+<li><b>用积木</b> — 把 <code>学习的物体是 [红杯子]？</code> 放进 <code>当 ○</code> 或 <code>如果</code> 来控制机器人。</li>
+</ol>
+<p class="tip">💡 <b>技巧</b>：各类别照片数量相近 · 在实际使用的地点和光线下训练 · 背景尽量简单 · 手入镜时 AI 可能学成“手”，所以<b>背景类别里也要拍到手</b></p>
+<h4>🎨 颜色学习 — 4 步</h4>
+<ol>
+<li>把彩色物体<b>填满画面中间的方框</b>。</li>
+<li>按<b>学习中间的颜色</b>并命名（例：<i>荧光绿</i>）。</li>
+<li>调整<b>容差</b>：太大会抓到相近颜色，太小会漏掉阴影部分。</li>
+<li>积木的颜色列表里会出现 <b>★ 荧光绿</b>。试试用 <code>[★ 荧光绿] 色的 x</code> 做追球机器人。</li>
+</ol>
+<p class="tip">💡 白、黑、灰没有色相，很难学习。越鲜艳越好找；光线变化后请重新学习。</p>
+<h4>🤖 作品创意</h4>
+<ul>
+<li><b>分拣机器人</b>：<code>当 学习的物体是 [红杯子]</code> → 马达顺时针 1 秒，<code>[蓝球]</code> 则逆时针</li>
+<li><b>颜色跟随</b>：重复执行 — <code>[★ 我的颜色] 色的 x</code> 小于 40 向左，大于 60 向右</li>
+<li><b>置信度仪表</b>：<code>将马达功率设为 [[物体 1] 置信度] %</code></li>
+</ul>
+<p class="muted">训练内容会和项目一起保存。要在电脑上用 Python 运行，请把<b>保存 Python 用训练文件</b>得到的文件放在 .py 文件旁边。</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 ¿Cómo aprende la IA?</h4>
+<p>La IA convierte cada foto en <b>1.024 números (características)</b>. Enseñar es darle muchos ejemplos: «estos números son una <b>taza</b>». Ante una foto nueva busca las <b>7 fotos de entrenamiento más parecidas</b> y responde con la clase mayoritaria (método del vecino más cercano). <b>Más buenos ejemplos</b> la hacen más lista.</p>
+<h4>📦 Aprender objetos — 5 pasos</h4>
+<ol>
+<li><b>Decide qué distinguir</b> — p. ej. <i>taza roja / pelota azul / fondo</i>. Ten siempre una clase <b>Fondo (nada)</b>.</li>
+<li><b>Reúne fotos</b> — en cada clase mantén <b>Mantén para grabar</b> y junta 30–50 fotos. <b>Gira</b> el objeto y muévelo <b>cerca/lejos e izquierda/derecha</b>.</li>
+<li><b>Entrena</b> — pulsa el botón; es instantáneo.</li>
+<li><b>Prueba</b> — enseña el objeto y mira las barras de confianza. Si falla, <b>graba más fotos</b> de esa situación y vuelve a entrenar.</li>
+<li><b>Usa bloques</b> — pon <code>¿objeto aprendido es [taza roja]?</code> en <code>cuando ○</code> o <code>si</code> para mover el robot.</li>
+</ol>
+<p class="tip">💡 <b>Consejos</b>: número de fotos parecido en cada clase · entrena en el lugar y la luz donde lo usarás · fondo sencillo · si sale tu mano la IA puede aprender «mano», así que <b>graba también tu mano en la clase Fondo</b></p>
+<h4>🎨 Aprender colores — 4 pasos</h4>
+<ol>
+<li>Pon un objeto de color de modo que <b>llene el cuadro central</b>.</li>
+<li>Pulsa <b>Aprender el color central</b> y ponle nombre (p. ej. <i>verde neón</i>).</li>
+<li>Ajusta la <b>tolerancia</b>: muy amplia capta colores parecidos; muy estrecha pierde las sombras.</li>
+<li><b>★ verde neón</b> aparece en las listas de color. Prueba <code>x del color [★ verde neón]</code> para un robot que sigue una pelota.</li>
+</ol>
+<p class="tip">💡 Blanco, negro y gris no tienen tono y cuesta aprenderlos. Los colores vivos funcionan mejor; vuelve a enseñar si cambia la luz.</p>
+<h4>🤖 Ideas de proyectos</h4>
+<ul>
+<li><b>Robot clasificador</b>: <code>cuando ¿objeto aprendido es [taza roja]?</code> → motor horario 1 s; <code>[pelota azul]</code> → antihorario</li>
+<li><b>Seguidor de color</b>: por siempre — si <code>x del color [★ mi color]</code> &lt; 40 gira a la izquierda, &gt; 60 a la derecha</li>
+<li><b>Medidor de confianza</b>: <code>fijar potencia en [confianza de [Objeto 1]] %</code></li>
+</ul>
+<p class="muted">Lo aprendido se guarda con el proyecto. Para Python en un PC, pon el archivo de <b>Guardar archivo para Python</b> junto a tu .py.</p>
+</div>`],
     funcs: ['사용할 수 있는 함수', 'Available functions', '使える関数', '可用函数', 'Funciones disponibles']
   };
 

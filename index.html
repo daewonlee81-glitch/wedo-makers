@@ -79,6 +79,7 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .camwin[hidden]{display:none}
 .camwin.sz-s{width:240px}.camwin.sz-m{width:340px}.camwin.sz-l{width:480px}
 .cam-head{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:#0f766e;cursor:move;user-select:none;touch-action:none;font-size:13px}
+.cam-head .learnbtn{width:auto;padding:0 8px;font-size:12px;font-weight:700;background:#6d28d9}
 .cam-head button{border:0;background:rgba(255,255,255,.18);color:#fff;width:24px;height:24px;border-radius:6px;font-size:15px;line-height:1;padding:0}
 .cam-status{font-size:11.5px;opacity:.85;font-weight:600}
 .cam-view{position:relative;background:#000;aspect-ratio:4/3}
@@ -95,6 +96,65 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .cam-read b{color:#7fd8cf;margin-right:3px}
 .cam-read .muted{color:#9fb0c6}
 #btnCam.on{background:#e6f6f4;border-color:#9fd9d1;color:#0f5f58}
+/* AI 학습 창 */
+.learn-bg{position:fixed;inset:0;z-index:90;background:rgba(15,22,36,.5);display:flex;align-items:center;justify-content:center;padding:14px}
+.learn-bg[hidden]{display:none}
+.learn{background:#fff;border-radius:16px;width:min(1180px,100%);height:min(780px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.learn-head{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;background:#6d28d9;color:#fff}
+.learn-head b{font-size:16px}
+.learn-tabs{display:flex;gap:4px}
+.learn-tabs button{border:0;background:rgba(255,255,255,.15);color:#fff;padding:7px 13px;border-radius:9px;font-weight:700}
+.learn-tabs button.on{background:#fff;color:#5b21b6}
+.learn-head .x{border:0;background:rgba(255,255,255,.18);color:#fff;width:30px;height:30px;border-radius:8px;font-size:18px}
+.learn-body{flex:1;display:flex;min-height:0}
+.learn-left{width:46%;min-width:300px;padding:14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:10px;overflow:auto;background:#faf8ff}
+.learn-view{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;flex:none}
+.learn-view canvas{width:100%;height:100%;display:block}
+.learn-view #learnCamOn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.center-box{position:absolute;left:40%;top:37.5%;width:20%;height:25%;border:3px dashed #fff;border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.25);display:none;pointer-events:none}
+.learn.color-tab .center-box{display:block}
+.learn-status{font-size:12.5px;color:var(--ink2)}
+.pbar{display:grid;grid-template-columns:minmax(80px,32%) 1fr 46px;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.pbar .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar .tr{height:16px;border-radius:8px;background:#ede9fe;overflow:hidden}
+.pbar .tr i{display:block;height:100%;background:#8b5cf6;transition:width .15s}
+.pbar.top .tr i{background:#6d28d9}
+.pbar .pc{text-align:right;font:700 13px "JetBrains Mono",monospace}
+.learn-right{flex:1;overflow:auto;padding:14px 16px}
+.lpane{display:none}.lpane.on{display:block}
+.cls{border:1px solid #ddd6fe;border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.cls-top{display:flex;align-items:center;gap:8px}
+.cls-top input{flex:1;font:inherit;font-weight:700;border:1px solid transparent;border-radius:7px;padding:4px 6px}
+.cls-top input:hover,.cls-top input:focus{border-color:#ddd6fe;outline:none}
+.cls-count{font:700 13px "JetBrains Mono",monospace;color:#5b21b6;background:#f3f0ff;border-radius:7px;padding:2px 8px;white-space:nowrap}
+.cls-thumbs{display:flex;gap:4px;margin:8px 0;min-height:36px;flex-wrap:wrap}
+.cls-thumbs img{width:48px;height:36px;object-fit:cover;border-radius:5px;border:1px solid #e5e7eb}
+.cls-btns{display:flex;gap:6px;flex-wrap:wrap}
+.hold{background:#6d28d9;border-color:#6d28d9;color:#fff;user-select:none;touch-action:none}
+.hold.rec{background:#dc2626;border-color:#dc2626}
+.hold.rec:before{content:"● ";animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.btn.small{padding:5px 9px;font-size:12.5px}
+.btn.big{padding:10px 18px;font-size:15px}
+.btn.primary.big{background:#6d28d9;border-color:#6d28d9}
+.train-row{display:flex;align-items:center;gap:12px;margin:14px 0 10px}
+.learn-io{display:flex;gap:6px;flex-wrap:wrap}
+.warnmsg{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:9px;padding:8px 10px;margin:10px 0;font-size:13px}
+.lcolor{display:grid;grid-template-columns:40px 1fr;gap:4px 10px;align-items:center;border:1px solid #ddd6fe;border-radius:12px;padding:10px 12px;margin:10px 0}
+.lcolor .sw{width:40px;height:40px;border-radius:10px;border:2px solid #fff;box-shadow:0 0 0 1px #ccc;grid-row:span 2}
+.lcolor .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lcolor input[type=text]{font:inherit;font-weight:700;border:1px solid #ddd6fe;border-radius:7px;padding:4px 6px;width:140px}
+.lcolor input[type=range]{width:140px;accent-color:#6d28d9}
+.found{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f1f5f9;color:#64748b}
+.found.yes{background:#dcfce7;color:#166534}
+.guide{line-height:1.7;color:#2d3546;font-size:14px}
+.guide h4{margin:16px 0 6px;font-size:15.5px;color:#4c1d95}
+.guide h4:first-child{margin-top:0}
+.guide ol,.guide ul{padding-left:22px;margin:6px 0}
+.guide li{margin:4px 0}
+.guide code{background:#f3f0ff;color:#4c1d95;padding:1px 6px;border-radius:5px;font-size:12.5px}
+.guide .tip{background:#f5f3ff;border-left:4px solid #8b5cf6;padding:8px 12px;border-radius:0 9px 9px 0}
+@media (max-width:820px){.learn-body{flex-direction:column;overflow:auto}.learn-left{width:auto;border-right:0;border-bottom:1px solid var(--line)}.learn-right{overflow:visible}}
 /* 언어 선택 */
 #langSel{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font:inherit;font-weight:600;color:var(--ink)}
 .linkbtn{border:0;background:none;color:var(--brand);text-decoration:underline;margin-left:8px;font:inherit;font-size:12px;padding:0}
@@ -232,6 +292,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
         <div class="cam-head" id="camHead">
           <b data-i18n="cam_title">AI 카메라</b><span class="cam-status" id="camStatus"></span>
           <span class="spacer"></span>
+          <button id="btnLearn" class="learnbtn" data-i18n="learn_btn">🧠 AI 학습하기</button>
           <button id="camSize" title="S / M / L">⤡</button><button id="camClose" aria-label="close">×</button>
         </div>
         <div class="cam-view"><canvas id="camCanvas" width="640" height="480"></canvas><button class="btn primary" id="camPower">카메라 켜기</button></div>
@@ -240,6 +301,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
           <label><input type="checkbox" data-mode="hand"><span data-i18n="cam_m_hand">손 모양</span></label>
           <label><input type="checkbox" data-mode="object"><span data-i18n="cam_m_object">사물</span></label>
           <label><input type="checkbox" data-mode="color"><span data-i18n="cam_m_color">색깔</span></label>
+          <label><input type="checkbox" data-mode="learn"><span data-i18n="cam_m_learn">학습한 사물</span></label>
         </div>
         <div class="cam-read" id="camRead"></div>
       </div>
@@ -308,6 +370,52 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       </section>
     </aside>
   </main>
+</div>
+
+<div class="learn-bg" id="learnBg" hidden>
+  <div class="learn">
+    <div class="learn-head">
+      <b data-i18n="learn_title">AI 학습</b>
+      <div class="learn-tabs">
+        <button data-ltab="obj" class="on" data-i18n="learn_tab_obj">사물 학습</button>
+        <button data-ltab="color" data-i18n="learn_tab_color">색 학습</button>
+        <button data-ltab="guide" data-i18n="learn_tab_guide">학습 방법 안내</button>
+      </div>
+      <span class="spacer"></span>
+      <button class="x" id="learnClose" aria-label="close">×</button>
+    </div>
+    <div class="learn-body">
+      <div class="learn-left">
+        <div class="learn-view"><canvas id="learnCanvas" width="640" height="480"></canvas><div class="center-box" id="centerBox"></div>
+          <button class="btn primary" id="learnCamOn" data-i18n="cam_start">카메라 켜기</button></div>
+        <div class="learn-status" id="learnStatus"></div>
+        <div id="learnPredict"></div>
+      </div>
+      <div class="learn-right">
+        <div class="lpane on" id="lp-obj">
+          <div id="clsList"></div>
+          <button class="btn" id="addCls" data-i18n="learn_add_cls">＋ 클래스 추가</button>
+          <div class="train-row">
+            <button class="btn primary big" id="trainBtn" data-i18n="learn_train">학습시키기</button>
+            <span id="trainInfo" class="muted"></span>
+          </div>
+          <div class="learn-io">
+            <button class="btn" id="exportLearn" data-i18n="learn_export">Python용 학습 파일 저장</button>
+            <button class="btn" id="importLearn" data-i18n="learn_import">학습 파일 불러오기</button>
+            <input type="file" id="learnFile" accept=".json" hidden>
+          </div>
+          <p class="muted" data-i18n="learn_saved_note"></p>
+        </div>
+        <div class="lpane" id="lp-color">
+          <p class="muted" data-i18n="learn_color_center"></p>
+          <button class="btn primary big" id="takeColor" data-i18n="learn_color_take">가운데 색 학습</button>
+          <div id="colorMsg" class="warnmsg" hidden></div>
+          <div id="colorList"></div>
+        </div>
+        <div class="lpane" id="lp-guide"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
@@ -4914,7 +5022,7 @@ return Blockly.Msg;
 }));
 
 }).call(root); return root.Blockly.Msg; })();</script>
-<script>window.WEDO2_PY = "\"\"\"\nwedo2.py — LEGO WeDo 2.0 허브를 Python 으로 제어하는 라이브러리\n(위두 메이커스에서 생성한 Python 코드를 그대로 실행하기 위한 짝 라이브러리)\n\n필요: Python 3.9+, `pip install bleak`\n     키보드 블록을 쓰면 `pip install pynput`\n     AI 카메라 블록을 쓰면 `pip install mediapipe opencv-python`\n사용 예:\n\n    from wedo2 import *\n\n    @on_start\n    def main():\n        light_color(GREEN)\n        motor_on_for(1, 2)\n\n    run()\n\"\"\"\nimport asyncio\nimport sys\nimport threading\nimport time\n\ntry:\n    from bleak import BleakClient, BleakScanner\nexcept ImportError:  # pragma: no cover\n    sys.exit(\"bleak 패키지가 필요합니다.  pip install bleak  를 먼저 실행하세요.\")\n\n__all__ = [\n    \"on_start\", \"on_button\", \"on_key\", \"when\", \"run\", \"is_key_pressed\",\n    \"motor_on\", \"motor_off\", \"motor_on_for\", \"motor_power\", \"motor_direction\", \"motor_reverse\",\n    \"light_color\", \"light_rgb\", \"light_off\", \"play_tone\", \"stop_sound\",\n    \"distance\", \"is_tilted\", \"tilt_angle\", \"is_button_pressed\", \"timer\", \"reset_timer\",\n    \"wait\", \"wait_until\", \"stop_all\",\n    \"ALL\", \"CLOCKWISE\", \"COUNTERCLOCKWISE\", \"UP\", \"DOWN\", \"LEFT\", \"RIGHT\", \"ANY\",\n    \"RED\", \"ORANGE\", \"YELLOW\", \"GREEN\", \"CYAN\", \"BLUE\", \"PURPLE\", \"PINK\", \"WHITE\",\n    # AI 카메라\n    \"BOTH\", \"is_person_seen\", \"is_arm_up\", \"body_x\", \"body_y\", \"elbow_angle\", \"shoulder_tilt\",\n    \"is_hand_seen\", \"is_gesture\", \"finger_count\", \"hand_x\", \"hand_y\",\n    \"is_object_seen\", \"object_x\", \"object_y\", \"object_count\",\n    \"is_color_seen\", \"color_x\", \"color_y\", \"color_size\",\n]\n\n# ---------------------------------------------------------------- 상수\nALL = 0\nCLOCKWISE, COUNTERCLOCKWISE = 1, -1\nUP, DOWN, LEFT, RIGHT, ANY = \"UP\", \"DOWN\", \"LEFT\", \"RIGHT\", \"ANY\"\nBOTH = \"BOTH\"\nRED = (255, 0, 0)\nORANGE = (255, 70, 0)\nYELLOW = (255, 190, 0)\nGREEN = (0, 255, 0)\nCYAN = (0, 200, 255)\nBLUE = (0, 0, 255)\nPURPLE = (140, 0, 255)\nPINK = (255, 0, 110)\nWHITE = (255, 255, 255)\n\n\ndef _u(short):\n    return f\"0000{short}-1212-efde-1523-785feabcd123\"\n\n\nSVC_DEVICE = _u(\"1523\")\nCH_BUTTON = _u(\"1526\")\nCH_ATTACHED_IO = _u(\"1527\")\nCH_INPUT_VALUES = _u(\"1560\")\nCH_INPUT_COMMAND = _u(\"1563\")\nCH_OUTPUT_COMMAND = _u(\"1565\")\nDEV_MOTOR, DEV_LED, DEV_TILT, DEV_DISTANCE = 1, 23, 34, 35\nTILT_THRESHOLD = 15\n\n\nclass _Stopped(Exception):\n    pass\n\n\n# ---------------------------------------------------------------- 허브 연결 (백그라운드 이벤트 루프)\nclass _Hub:\n    def __init__(self):\n        self.loop = asyncio.new_event_loop()\n        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)\n        self.thread.start()\n        self.client = None\n        self.ports = {1: None, 2: None}\n        self.distance = 0\n        self.tilt_x = 0\n        self.tilt_y = 0\n        self.button = False\n        self.lock = threading.Lock()\n        self.last = {6: [6, 4, 3, 0, 0, 255]}  # 연결 직후 LED 는 파랑\n\n    def call(self, coro, timeout=20):\n        return asyncio.run_coroutine_threadsafe(coro, self.loop).result(timeout)\n\n    async def _connect(self, timeout):\n        print(\"WeDo 2.0 허브를 찾는 중… (허브의 초록 버튼을 눌러 주세요)\")\n        dev = await BleakScanner.find_device_by_filter(\n            lambda d, adv: SVC_DEVICE.lower() in [s.lower() for s in (adv.service_uuids or [])],\n            timeout=timeout,\n        )\n        if dev is None:\n            raise RuntimeError(\"허브를 찾지 못했습니다. 허브 버튼을 누르고 다시 실행하세요.\")\n        self.client = BleakClient(dev)\n        await self.client.connect()\n        await self.client.start_notify(CH_INPUT_VALUES, self._on_input)\n        await self.client.start_notify(CH_ATTACHED_IO, self._on_attached)\n        try:\n            await self.client.start_notify(CH_BUTTON, self._on_button)\n        except Exception:\n            pass\n        await self._write(CH_INPUT_COMMAND, [1, 2, 6, DEV_LED, 1, 1, 0, 0, 0, 0, 0])  # LED → RGB 모드\n        await self._write(CH_OUTPUT_COMMAND, [6, 4, 3, 0, 0, 255])  # 연결됨 표시: 파랑\n        await asyncio.sleep(0.5)  # 포트 정보 수신 대기\n        print(f\"연결됨: {dev.name or dev.address}\")\n\n    async def _write(self, char, data):\n        await self.client.write_gatt_char(char, bytes(data))\n\n    def _on_attached(self, _sender, data):\n        port = data[0]\n        if port not in (1, 2):\n            return\n        dtype = data[3] if data[1] == 1 and len(data) > 3 else None\n        self.ports[port] = dtype\n        if dtype == DEV_DISTANCE:\n            self.loop.create_task(self._write(CH_INPUT_COMMAND, [1, 2, port, DEV_DISTANCE, 0, 1, 0, 0, 0, 1, 1]))\n        elif dtype == DEV_TILT:\n            self.loop.create_task(self._write(CH_INPUT_COMMAND, [1, 2, port, DEV_TILT, 0, 1, 0, 0, 0, 0, 1]))\n\n    def _on_input(self, _sender, data):\n        if len(data) < 3:\n            return\n        dtype = self.ports.get(data[1])\n        if dtype == DEV_DISTANCE:\n            self.distance = data[2] * 10\n        elif dtype == DEV_TILT and len(data) >= 4:\n            self.tilt_x, self.tilt_y = data[2], data[3]\n\n    def _on_button(self, _sender, data):\n        self.button = data[0] == 1\n\n    def output(self, data):\n        # 모터·LED 는 같은 값이면 다시 보내지 않는다 (반복문 안에서 BLE 과부하 방지)\n        key = data[0] if data[0] in (1, 2, 6) else None\n        with self.lock:\n            if key is not None and self.last.get(key) == list(data):\n                return\n            if key is not None:\n                self.last[key] = list(data)\n            self.call(self._write(CH_OUTPUT_COMMAND, data))\n\n    def disconnect(self):\n        if self.client and self.client.is_connected:\n            try:\n                self.call(self.client.disconnect(), timeout=5)\n            except Exception:\n                pass\n\n\n_hub = None\n_running = threading.Event()\n_handlers = {\"start\": [], \"button\": [], \"when\": [], \"key\": []}\n_m_power = {1: 100, 2: 100}\n_m_dir = {1: 1, 2: 1}\n_m_on = {1: False, 2: False}\n_t0 = time.monotonic()\n_keys = set()\n_key_events = []  # 눌린 키 이름 대기열 (메인 루프에서 처리)\n_key_listener = None\n\n\ndef _check():\n    if not _running.is_set():\n        raise _Stopped()\n\n\ndef _ports(p):\n    return [1, 2] if int(p) == 0 else [max(1, min(2, int(p)))]\n\n\ndef _send_motor(port):\n    if not _m_on[port]:\n        val = 0\n    else:\n        p = max(0, min(100, float(_m_power[port])))\n        val = 0 if p == 0 else round(10 + (p - 1) * 90 / 99)\n        val *= _m_dir[port]\n    _hub.output([port, 1, 1, int(val) & 0xFF])\n\n\n# ---------------------------------------------------------------- 블록과 1:1 로 대응하는 함수\ndef motor_on(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_on[k] = True\n        _send_motor(k)\n\n\ndef motor_off(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_on[k] = False\n        _hub.output([k, 1, 1, 127])  # 브레이크\n\n\ndef motor_on_for(port, seconds):\n    motor_on(port)\n    wait(seconds)\n    motor_off(port)\n\n\ndef motor_power(port, power):\n    _check()\n    for k in _ports(port):\n        _m_power[k] = max(0, min(100, float(power)))\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef motor_direction(port, direction):\n    _check()\n    for k in _ports(port):\n        _m_dir[k] = -1 if float(direction) < 0 else 1\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef motor_reverse(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_dir[k] *= -1\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef light_rgb(r, g, b):\n    _check()\n    c = [max(0, min(255, int(round(float(x))))) for x in (r, g, b)]\n    _hub.output([6, 4, 3] + c)\n\n\ndef light_color(color):\n    light_rgb(*color)\n\n\ndef light_off():\n    light_rgb(0, 0, 0)\n\n\ndef play_tone(frequency, seconds):\n    _check()\n    f = max(20, min(20000, int(round(float(frequency)))))\n    ms = max(0, min(65535, int(round(float(seconds) * 1000))))\n    _hub.output([5, 2, 4, f & 0xFF, (f >> 8) & 0xFF, ms & 0xFF, (ms >> 8) & 0xFF])\n    wait(ms / 1000)\n\n\ndef stop_sound():\n    _check()\n    _hub.output([5, 3, 0])\n\n\ndef distance():\n    return round(_hub.distance)\n\n\ndef tilt_angle(direction):\n    x, y = _hub.tilt_x, _hub.tilt_y\n    if direction == UP:\n        return 256 - y if y > 45 else -y\n    if direction == DOWN:\n        return y - 256 if y > 45 else y\n    if direction == LEFT:\n        return 256 - x if x > 45 else -x\n    if direction == RIGHT:\n        return x - 256 if x > 45 else x\n    return 0\n\n\ndef is_tilted(direction=ANY):\n    if direction == ANY:\n        return any(tilt_angle(d) >= TILT_THRESHOLD for d in (UP, DOWN, LEFT, RIGHT))\n    return tilt_angle(direction) >= TILT_THRESHOLD\n\n\ndef is_button_pressed():\n    return bool(_hub.button)\n\n\n# ---------------------------------------------------------------- PC 키보드\ndef _key_name(key):\n    \"\"\"pynput 키 → 블록에서 쓰는 이름 ('space', 'up', 'a', '1' …). 한/영 상태와 무관하게 동작.\"\"\"\n    from pynput import keyboard as kb\n    special = {kb.Key.space: \"space\", kb.Key.enter: \"enter\", kb.Key.up: \"up\",\n               kb.Key.down: \"down\", kb.Key.left: \"left\", kb.Key.right: \"right\"}\n    if key in special:\n        return special[key]\n    vk = getattr(key, \"vk\", None)\n    if vk is not None:\n        if 65 <= vk <= 90:   # Windows 가상키 A~Z\n            return chr(vk).lower()\n        if 48 <= vk <= 57:\n            return chr(vk)\n        if 96 <= vk <= 105:  # 숫자 키패드\n            return str(vk - 96)\n    ch = getattr(key, \"char\", None)\n    if ch and ch.isascii() and ch.isalnum():\n        return ch.lower()\n    return None\n\n\ndef _start_keyboard():\n    global _key_listener\n    if _key_listener is not None:\n        return\n    try:\n        from pynput import keyboard as kb\n    except ImportError:\n        print(\"키보드 블록을 쓰려면  pip install pynput  을 먼저 실행하세요.\")\n        return\n\n    def press(key):\n        k = _key_name(key)\n        if k and k not in _keys:\n            _keys.add(k)\n            _key_events.append(k)\n\n    def release(key):\n        _keys.discard(_key_name(key))\n\n    _key_listener = kb.Listener(on_press=press, on_release=release)\n    _key_listener.daemon = True\n    _key_listener.start()\n\n\ndef is_key_pressed(key=\"any\"):\n    _start_keyboard()\n    return bool(_keys) if key == \"any\" else key in _keys\n\n\ndef timer():\n    return round(time.monotonic() - _t0, 2)\n\n\ndef reset_timer():\n    global _t0\n    _t0 = time.monotonic()\n\n\ndef wait(seconds):\n    _check()\n    end = time.monotonic() + max(0.0, float(seconds))\n    while True:\n        left = end - time.monotonic()\n        if left <= 0:\n            break\n        time.sleep(min(left, 0.04))\n        _check()\n\n\ndef wait_until(condition):\n    _check()\n    while not condition():\n        time.sleep(0.02)\n        _check()\n\n\ndef stop_all():\n    _running.clear()\n    raise _Stopped()\n\n\n\n# ---------------------------------------------------------------- AI 카메라 (mediapipe + opencv)\n# 웹의 위두 메이커스와 같은 규칙: 거울 화면 기준 x 0(왼쪽)~100(오른쪽), y 0(아래)~100(위), 안 보이면 -1\n_MODEL_URLS = {\n    \"pose\": \"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task\",\n    \"hand\": \"https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task\",\n    \"object\": \"https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite\",\n}\n_BODY = {\"NOSE\": 0, \"LEFT_SHOULDER\": 11, \"RIGHT_SHOULDER\": 12, \"LEFT_ELBOW\": 13, \"RIGHT_ELBOW\": 14,\n         \"LEFT_WRIST\": 15, \"RIGHT_WRIST\": 16, \"LEFT_HIP\": 23, \"RIGHT_HIP\": 24, \"LEFT_KNEE\": 25,\n         \"RIGHT_KNEE\": 26, \"LEFT_ANKLE\": 27, \"RIGHT_ANKLE\": 28}\n_POSE_LINES = [(11, 12), (11, 13), (13, 15), (12, 14), (14, 16), (11, 23), (12, 24), (23, 24),\n               (23, 25), (25, 27), (24, 26), (26, 28)]\n_HAND_LINES = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8), (5, 9), (9, 10), (10, 11),\n               (11, 12), (9, 13), (13, 14), (14, 15), (15, 16), (13, 17), (17, 18), (18, 19), (19, 20), (0, 17)]\n_COLOR_RULES = {  # H 0~360, S·V 0~1\n    \"red\": lambda h, s, v: ((h < 15) | (h > 340)) & (s > 0.5) & (v > 0.3),\n    \"green\": lambda h, s, v: (h > 85) & (h < 160) & (s > 0.4) & (v > 0.25),\n    \"blue\": lambda h, s, v: (h > 195) & (h < 255) & (s > 0.45) & (v > 0.25),\n    \"yellow\": lambda h, s, v: (h > 42) & (h < 68) & (s > 0.45) & (v > 0.45),\n}\n\n\nclass _Camera:\n    def __init__(self):\n        self.lock = threading.Lock()\n        self.cap = None\n        self.tasks = {}\n        self.want = set()\n        self.pose = None\n        self.hand = None      # (landmarks, gesture)\n        self.objects = []     # dict(name, x, y, score, box)\n        self.colors = {}\n        self.view = None\n        self.thread = None\n        self.closed = False\n        self.done = set()   # 한 번 이상 처리된 기능\n\n    # --- 준비 ---\n    def _libs(self):\n        try:\n            import cv2  # noqa: F401\n            import mediapipe  # noqa: F401\n        except ImportError:\n            raise SystemExit(\"AI 카메라 블록을 쓰려면  pip install mediapipe opencv-python  을 먼저 실행하세요.\")\n\n    def _model(self, mode):\n        import os\n        import urllib.request\n        folder = os.path.join(os.path.expanduser(\"~\"), \".wedo2_models\")\n        os.makedirs(folder, exist_ok=True)\n        path = os.path.join(folder, _MODEL_URLS[mode].rsplit(\"/\", 1)[1])\n        if not os.path.exists(path):\n            print(f\"AI 모델 받는 중… ({mode})\")\n            urllib.request.urlretrieve(_MODEL_URLS[mode], path + \".part\")\n            os.replace(path + \".part\", path)\n        return path\n\n    def need(self, mode):\n        if mode in self.want or self.closed:\n            return\n        self._libs()\n        with self.lock:\n            if mode in self.want:\n                return\n            import cv2\n            from mediapipe.tasks import python as mpt\n            from mediapipe.tasks.python import vision\n            if self.cap is None:\n                self.cap = cv2.VideoCapture(0)\n                if not self.cap.isOpened():\n                    raise RuntimeError(\"카메라를 열 수 없습니다.\")\n            if mode != \"color\":\n                base = mpt.BaseOptions(model_asset_path=self._model(mode))\n                video = vision.RunningMode.VIDEO\n                if mode == \"pose\":\n                    self.tasks[mode] = vision.PoseLandmarker.create_from_options(\n                        vision.PoseLandmarkerOptions(base_options=base, running_mode=video, num_poses=1))\n                elif mode == \"hand\":\n                    self.tasks[mode] = vision.GestureRecognizer.create_from_options(\n                        vision.GestureRecognizerOptions(base_options=base, running_mode=video, num_hands=1))\n                else:\n                    self.tasks[mode] = vision.ObjectDetector.create_from_options(\n                        vision.ObjectDetectorOptions(base_options=base, running_mode=video,\n                                                     score_threshold=0.4, max_results=8))\n            self.want.add(mode)\n            if self.thread is None:\n                self.thread = threading.Thread(target=self._loop, daemon=True)\n                self.thread.start()\n        # 이 기능의 첫 결과가 나올 때까지 기다린다 (최대 5초)\n        end = time.monotonic() + 5\n        while mode not in self.done and time.monotonic() < end and not self.closed:\n            time.sleep(0.02)\n\n    # --- 매 프레임 ---\n    def _loop(self):\n        import cv2\n        import numpy as np\n        import mediapipe as mp\n        turn = 0\n        last_ts = 0\n        while not self.closed:\n            ok, frame = self.cap.read()\n            if not ok:\n                time.sleep(0.02)\n                continue\n            ts = max(last_ts + 1, int(time.monotonic() * 1000))\n            last_ts = ts\n            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)\n            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)\n            heavy = [m for m in (\"pose\", \"hand\", \"object\") if m in self.want]\n            pick = heavy[turn % len(heavy)] if heavy else None\n            turn += 1\n            try:\n                if pick == \"pose\":\n                    r = self.tasks[\"pose\"].detect_for_video(image, ts)\n                    self.pose = r.pose_landmarks[0] if r.pose_landmarks else None\n                    self.done.add(\"pose\")\n                elif pick == \"hand\":\n                    r = self.tasks[\"hand\"].recognize_for_video(image, ts)\n                    if r.hand_landmarks:\n                        g = r.gestures[0][0].category_name if r.gestures and r.gestures[0] else \"None\"\n                        self.hand = (r.hand_landmarks[0], g)\n                    else:\n                        self.hand = None\n                    self.done.add(\"hand\")\n                elif pick == \"object\":\n                    r = self.tasks[\"object\"].detect_for_video(image, ts)\n                    h, w = frame.shape[:2]\n                    objs = []\n                    for d in r.detections:\n                        b, c = d.bounding_box, d.categories[0]\n                        cx, cy = (b.origin_x + b.width / 2) / w, (b.origin_y + b.height / 2) / h\n                        objs.append({\"name\": c.category_name, \"score\": c.score,\n                                     \"x\": round((1 - cx) * 100, 1), \"y\": round((1 - cy) * 100, 1),\n                                     \"box\": (b.origin_x, b.origin_y, b.width, b.height)})\n                    self.objects = objs\n                    self.done.add(\"object\")\n            except Exception:  # noqa: BLE001\n                pass\n            if \"color\" in self.want:\n                small = cv2.flip(cv2.resize(frame, (80, 60)), 1)\n                hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV).astype(np.float32)\n                H, S, V = hsv[..., 0] * 2, hsv[..., 1] / 255, hsv[..., 2] / 255\n                ys, xs = np.mgrid[0:60, 0:80]\n                out = {}\n                for k, rule in _COLOR_RULES.items():\n                    m = rule(H, S, V)\n                    n = int(m.sum())\n                    size = round(n / 4800 * 100, 1)\n                    if size >= 1.5:\n                        out[k] = {\"seen\": True, \"x\": round(xs[m].mean() / 79 * 100, 1),\n                                  \"y\": round(100 - ys[m].mean() / 59 * 100, 1), \"size\": size}\n                    else:\n                        out[k] = {\"seen\": False, \"x\": -1, \"y\": -1, \"size\": size}\n                self.colors = out\n                self.done.add(\"color\")\n            self.view = self._draw(frame)\n\n    def _draw(self, frame):\n        import cv2\n        h, w = frame.shape[:2]\n        img = cv2.flip(frame, 1)\n        P = lambda lm: (int((1 - lm.x) * w), int(lm.y * h))  # noqa: E731\n        if self.pose:\n            for a, b in _POSE_LINES:\n                if self.pose[a].visibility > 0.4 and self.pose[b].visibility > 0.4:\n                    cv2.line(img, P(self.pose[a]), P(self.pose[b]), (255, 229, 0), 3)\n            for i in _BODY.values():\n                if self.pose[i].visibility > 0.4:\n                    cv2.circle(img, P(self.pose[i]), 5, (255, 255, 255), -1)\n        if self.hand:\n            lm = self.hand[0]\n            for a, b in _HAND_LINES:\n                cv2.line(img, P(lm[a]), P(lm[b]), (10, 214, 255), 2)\n            cv2.putText(img, self.hand[1], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (10, 214, 255), 2)\n        for o in self.objects:\n            x, y, bw, bh = o[\"box\"]\n            x = w - x - bw\n            cv2.rectangle(img, (int(x), int(y)), (int(x + bw), int(y + bh)), (88, 209, 48), 2)\n            cv2.putText(img, f'{o[\"name\"]} {int(o[\"score\"] * 100)}%', (int(x), int(y) - 6),\n                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (88, 209, 48), 2)\n        for k, c in self.colors.items():\n            if c[\"seen\"]:\n                cv2.circle(img, (int(c[\"x\"] / 100 * w), int((1 - c[\"y\"] / 100) * h)), 12, (255, 255, 255), 3)\n        return img\n\n    def show(self):\n        \"\"\"메인 스레드에서 부른다 (macOS 는 창을 메인 스레드에서만 그릴 수 있음).\"\"\"\n        if self.view is None or self.closed:\n            return\n        import cv2\n        cv2.imshow(\"WeDo Makers - AI Camera (Q: close)\", self.view)\n        if cv2.waitKey(1) & 0xFF in (ord(\"q\"), ord(\"Q\")):\n            self.close()\n            _running.clear()\n\n    def close(self):\n        self.closed = True\n        if self.thread is not None:\n            self.thread.join(timeout=1)\n        for task in self.tasks.values():\n            try:\n                task.close()\n            except Exception:  # noqa: BLE001\n                pass\n        self.tasks = {}\n        try:\n            import cv2\n            if self.cap is not None:\n                self.cap.release()\n            cv2.destroyAllWindows()\n        except Exception:  # noqa: BLE001\n            pass\n\n    # --- 값 읽기 ---\n    def lm(self, part):\n        if not self.pose:\n            return None\n        L = self.pose[_BODY[part]]\n        return L if L.visibility >= 0.5 else None\n\n\n_cam = _Camera()\n\n\ndef _clamp100(v):\n    return round(max(0.0, min(100.0, v)), 1)\n\n\ndef is_person_seen():\n    _cam.need(\"pose\")\n    return any(_cam.lm(p) for p in (\"LEFT_SHOULDER\", \"RIGHT_SHOULDER\", \"NOSE\"))\n\n\ndef body_x(part):\n    _cam.need(\"pose\")\n    L = _cam.lm(part)\n    return _clamp100((1 - L.x) * 100) if L else -1\n\n\ndef body_y(part):\n    _cam.need(\"pose\")\n    L = _cam.lm(part)\n    return _clamp100((1 - L.y) * 100) if L else -1\n\n\ndef is_arm_up(side=RIGHT):\n    _cam.need(\"pose\")\n    if side == BOTH:\n        return is_arm_up(LEFT) and is_arm_up(RIGHT)\n    w, s = _cam.lm(side + \"_WRIST\"), _cam.lm(side + \"_SHOULDER\")\n    return bool(w and s and w.y < s.y - 0.05)\n\n\ndef elbow_angle(side=RIGHT):\n    import math\n    _cam.need(\"pose\")\n    s, e, w = _cam.lm(side + \"_SHOULDER\"), _cam.lm(side + \"_ELBOW\"), _cam.lm(side + \"_WRIST\")\n    if not (s and e and w):\n        return -1\n    a, b = (s.x - e.x, s.y - e.y), (w.x - e.x, w.y - e.y)\n    cos = (a[0] * b[0] + a[1] * b[1]) / ((math.hypot(*a) * math.hypot(*b)) or 1)\n    return round(math.degrees(math.acos(max(-1.0, min(1.0, cos)))))\n\n\ndef shoulder_tilt():\n    \"\"\"화면 오른쪽으로 몸을 기울이면 +, 왼쪽이면 − (도)\"\"\"\n    import math\n    _cam.need(\"pose\")\n    l, r = _cam.lm(\"LEFT_SHOULDER\"), _cam.lm(\"RIGHT_SHOULDER\")\n    if not (l and r):\n        return 0\n    L, R = (1 - l.x, l.y), (1 - r.x, r.y)\n    a, b = (L, R) if L[0] < R[0] else (R, L)\n    return round(math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])))\n\n\ndef is_hand_seen():\n    _cam.need(\"hand\")\n    return _cam.hand is not None\n\n\ndef is_gesture(name):\n    \"\"\"'Closed_Fist', 'Open_Palm', 'Pointing_Up', 'Thumb_Up', 'Thumb_Down', 'Victory', 'ILoveYou'\"\"\"\n    _cam.need(\"hand\")\n    return bool(_cam.hand and _cam.hand[1] == name)\n\n\ndef finger_count():\n    import math\n    _cam.need(\"hand\")\n    if not _cam.hand:\n        return 0\n    lm = _cam.hand[0]\n    d = lambda a, b: math.hypot(lm[a].x - lm[b].x, lm[a].y - lm[b].y)  # noqa: E731\n    n = sum(1 for tip, pip in ((8, 6), (12, 10), (16, 14), (20, 18)) if d(tip, 0) > d(pip, 0) * 1.1)\n    if d(4, 9) > d(3, 9) * 1.12 and d(4, 17) > d(5, 17) * 0.9:\n        n += 1\n    return n\n\n\ndef hand_x():\n    _cam.need(\"hand\")\n    return _clamp100((1 - _cam.hand[0][9].x) * 100) if _cam.hand else -1\n\n\ndef hand_y():\n    _cam.need(\"hand\")\n    return _clamp100((1 - _cam.hand[0][9].y) * 100) if _cam.hand else -1\n\n\ndef _objs(name):\n    _cam.need(\"object\")\n    return sorted((o for o in _cam.objects if name == \"any\" or o[\"name\"] == name), key=lambda o: -o[\"score\"])\n\n\ndef is_object_seen(name):\n    \"\"\"COCO 이름: 'person', 'cup', 'bottle', 'sports ball', 'cell phone', 'book' … 또는 'any'\"\"\"\n    return bool(_objs(name))\n\n\ndef object_x(name):\n    o = _objs(name)\n    return o[0][\"x\"] if o else -1\n\n\ndef object_y(name):\n    o = _objs(name)\n    return o[0][\"y\"] if o else -1\n\n\ndef object_count(name):\n    return len(_objs(name))\n\n\ndef _color(name):\n    _cam.need(\"color\")\n    return _cam.colors.get(name, {\"seen\": False, \"x\": -1, \"y\": -1, \"size\": 0})\n\n\ndef is_color_seen(name):\n    \"\"\"'red', 'green', 'blue', 'yellow'\"\"\"\n    return _color(name)[\"seen\"]\n\n\ndef color_x(name):\n    return _color(name)[\"x\"]\n\n\ndef color_y(name):\n    return _color(name)[\"y\"]\n\n\ndef color_size(name):\n    return _color(name)[\"size\"]\n\n\n# ---------------------------------------------------------------- 이벤트 데코레이터\ndef on_start(fn):\n    _handlers[\"start\"].append(fn)\n    return fn\n\n\ndef on_button(fn):\n    _handlers[\"button\"].append({\"fn\": fn, \"busy\": False})\n    return fn\n\n\ndef on_key(key):\n    \"\"\"@on_key('space') — PC 키보드의 키를 누를 때마다 실행\"\"\"\n    def deco(fn):\n        _handlers[\"key\"].append({\"key\": key, \"fn\": fn, \"busy\": False})\n        return fn\n    return deco\n\n\ndef when(condition):\n    def deco(fn):\n        _handlers[\"when\"].append({\"cond\": condition, \"fn\": fn, \"busy\": False, \"prev\": True})\n        return fn\n    return deco\n\n\ndef _thread(fn, holder=None):\n    def target():\n        try:\n            fn()\n        except _Stopped:\n            pass\n        except Exception as e:  # noqa: BLE001\n            print(f\"오류: {e!r}\")\n            _running.clear()\n        finally:\n            if holder is not None:\n                holder[\"busy\"] = False\n\n    t = threading.Thread(target=target, daemon=True)\n    t.start()\n    return t\n\n\ndef _fire(h):\n    if h[\"busy\"]:\n        return\n    h[\"busy\"] = True\n    _thread(h[\"fn\"], h)\n\n\ndef _safe(cond):\n    try:\n        return bool(cond())\n    except Exception:  # noqa: BLE001\n        return False\n\n\ndef _all_stop():\n    for k in (1, 2):\n        _m_on[k] = False\n        try:\n            _hub.output([k, 1, 1, 0])\n        except Exception:  # noqa: BLE001\n            pass\n    try:\n        _hub.output([5, 3, 0])\n    except Exception:  # noqa: BLE001\n        pass\n\n\ndef run(scan_timeout=15):\n    \"\"\"허브에 연결하고 등록된 이벤트 함수들을 실행합니다. Ctrl+C 로 멈춥니다.\"\"\"\n    global _hub\n    _hub = _Hub()\n    try:\n        _hub.call(_hub._connect(scan_timeout), timeout=scan_timeout + 20)\n    except Exception as e:  # noqa: BLE001\n        print(f\"연결 실패: {e}\")\n        return\n    reset_timer()\n    if _handlers[\"key\"]:\n        _start_keyboard()\n    _running.set()\n    starts = [_thread(fn) for fn in _handlers[\"start\"]]\n    for h in _handlers[\"when\"]:\n        h[\"prev\"] = _safe(h[\"cond\"])\n    has_events = bool(_handlers[\"button\"] or _handlers[\"when\"] or _handlers[\"key\"])\n    prev_btn = is_button_pressed()\n    try:\n        while _running.is_set():\n            btn = is_button_pressed()\n            if btn and not prev_btn:\n                for h in _handlers[\"button\"]:\n                    _fire(h)\n            prev_btn = btn\n            while _key_events:\n                k = _key_events.pop(0)\n                for h in _handlers[\"key\"]:\n                    if h[\"key\"] in (k, \"any\"):\n                        _fire(h)\n            for h in _handlers[\"when\"]:\n                c = _safe(h[\"cond\"])\n                if c and not h[\"prev\"]:\n                    _fire(h)\n                h[\"prev\"] = c\n            if not has_events and not any(t.is_alive() for t in starts):\n                break\n            if _cam.thread is not None:\n                _cam.show()\n            if not _hub.client.is_connected:\n                print(\"허브 연결이 끊어졌습니다.\")\n                break\n            time.sleep(0.025)\n    except KeyboardInterrupt:\n        print(\"\\n멈춤\")\n    finally:\n        _running.clear()\n        time.sleep(0.1)\n        _all_stop()\n        if _cam.thread is not None:\n            _cam.close()\n        _hub.disconnect()\n        print(\"프로그램 종료\")\n";</script>
+<script>window.WEDO2_PY = "\"\"\"\nwedo2.py — LEGO WeDo 2.0 허브를 Python 으로 제어하는 라이브러리\n(위두 메이커스에서 생성한 Python 코드를 그대로 실행하기 위한 짝 라이브러리)\n\n필요: Python 3.9+, `pip install bleak`\n     키보드 블록을 쓰면 `pip install pynput`\n     AI 카메라 블록을 쓰면 `pip install mediapipe opencv-python`\n사용 예:\n\n    from wedo2 import *\n\n    @on_start\n    def main():\n        light_color(GREEN)\n        motor_on_for(1, 2)\n\n    run()\n\"\"\"\nimport asyncio\nimport sys\nimport threading\nimport time\n\ntry:\n    from bleak import BleakClient, BleakScanner\nexcept ImportError:  # pragma: no cover\n    sys.exit(\"bleak 패키지가 필요합니다.  pip install bleak  를 먼저 실행하세요.\")\n\n__all__ = [\n    \"on_start\", \"on_button\", \"on_key\", \"when\", \"run\", \"is_key_pressed\",\n    \"motor_on\", \"motor_off\", \"motor_on_for\", \"motor_power\", \"motor_direction\", \"motor_reverse\",\n    \"light_color\", \"light_rgb\", \"light_off\", \"play_tone\", \"stop_sound\",\n    \"distance\", \"is_tilted\", \"tilt_angle\", \"is_button_pressed\", \"timer\", \"reset_timer\",\n    \"wait\", \"wait_until\", \"stop_all\",\n    \"ALL\", \"CLOCKWISE\", \"COUNTERCLOCKWISE\", \"UP\", \"DOWN\", \"LEFT\", \"RIGHT\", \"ANY\",\n    \"RED\", \"ORANGE\", \"YELLOW\", \"GREEN\", \"CYAN\", \"BLUE\", \"PURPLE\", \"PINK\", \"WHITE\",\n    # AI 카메라\n    \"BOTH\", \"is_person_seen\", \"is_arm_up\", \"body_x\", \"body_y\", \"elbow_angle\", \"shoulder_tilt\",\n    \"is_hand_seen\", \"is_gesture\", \"finger_count\", \"hand_x\", \"hand_y\",\n    \"is_object_seen\", \"object_x\", \"object_y\", \"object_count\",\n    \"is_color_seen\", \"color_x\", \"color_y\", \"color_size\",\n    # AI 학습\n    \"load_learning\", \"learn_color\", \"is_learned\", \"learned_name\", \"learned_confidence\",\n]\n\n# ---------------------------------------------------------------- 상수\nALL = 0\nCLOCKWISE, COUNTERCLOCKWISE = 1, -1\nUP, DOWN, LEFT, RIGHT, ANY = \"UP\", \"DOWN\", \"LEFT\", \"RIGHT\", \"ANY\"\nBOTH = \"BOTH\"\nRED = (255, 0, 0)\nORANGE = (255, 70, 0)\nYELLOW = (255, 190, 0)\nGREEN = (0, 255, 0)\nCYAN = (0, 200, 255)\nBLUE = (0, 0, 255)\nPURPLE = (140, 0, 255)\nPINK = (255, 0, 110)\nWHITE = (255, 255, 255)\n\n\ndef _u(short):\n    return f\"0000{short}-1212-efde-1523-785feabcd123\"\n\n\nSVC_DEVICE = _u(\"1523\")\nCH_BUTTON = _u(\"1526\")\nCH_ATTACHED_IO = _u(\"1527\")\nCH_INPUT_VALUES = _u(\"1560\")\nCH_INPUT_COMMAND = _u(\"1563\")\nCH_OUTPUT_COMMAND = _u(\"1565\")\nDEV_MOTOR, DEV_LED, DEV_TILT, DEV_DISTANCE = 1, 23, 34, 35\nTILT_THRESHOLD = 15\n\n\nclass _Stopped(Exception):\n    pass\n\n\n# ---------------------------------------------------------------- 허브 연결 (백그라운드 이벤트 루프)\nclass _Hub:\n    def __init__(self):\n        self.loop = asyncio.new_event_loop()\n        self.thread = threading.Thread(target=self.loop.run_forever, daemon=True)\n        self.thread.start()\n        self.client = None\n        self.ports = {1: None, 2: None}\n        self.distance = 0\n        self.tilt_x = 0\n        self.tilt_y = 0\n        self.button = False\n        self.lock = threading.Lock()\n        self.last = {6: [6, 4, 3, 0, 0, 255]}  # 연결 직후 LED 는 파랑\n\n    def call(self, coro, timeout=20):\n        return asyncio.run_coroutine_threadsafe(coro, self.loop).result(timeout)\n\n    async def _connect(self, timeout):\n        print(\"WeDo 2.0 허브를 찾는 중… (허브의 초록 버튼을 눌러 주세요)\")\n        dev = await BleakScanner.find_device_by_filter(\n            lambda d, adv: SVC_DEVICE.lower() in [s.lower() for s in (adv.service_uuids or [])],\n            timeout=timeout,\n        )\n        if dev is None:\n            raise RuntimeError(\"허브를 찾지 못했습니다. 허브 버튼을 누르고 다시 실행하세요.\")\n        self.client = BleakClient(dev)\n        await self.client.connect()\n        await self.client.start_notify(CH_INPUT_VALUES, self._on_input)\n        await self.client.start_notify(CH_ATTACHED_IO, self._on_attached)\n        try:\n            await self.client.start_notify(CH_BUTTON, self._on_button)\n        except Exception:\n            pass\n        await self._write(CH_INPUT_COMMAND, [1, 2, 6, DEV_LED, 1, 1, 0, 0, 0, 0, 0])  # LED → RGB 모드\n        await self._write(CH_OUTPUT_COMMAND, [6, 4, 3, 0, 0, 255])  # 연결됨 표시: 파랑\n        await asyncio.sleep(0.5)  # 포트 정보 수신 대기\n        print(f\"연결됨: {dev.name or dev.address}\")\n\n    async def _write(self, char, data):\n        await self.client.write_gatt_char(char, bytes(data))\n\n    def _on_attached(self, _sender, data):\n        port = data[0]\n        if port not in (1, 2):\n            return\n        dtype = data[3] if data[1] == 1 and len(data) > 3 else None\n        self.ports[port] = dtype\n        if dtype == DEV_DISTANCE:\n            self.loop.create_task(self._write(CH_INPUT_COMMAND, [1, 2, port, DEV_DISTANCE, 0, 1, 0, 0, 0, 1, 1]))\n        elif dtype == DEV_TILT:\n            self.loop.create_task(self._write(CH_INPUT_COMMAND, [1, 2, port, DEV_TILT, 0, 1, 0, 0, 0, 0, 1]))\n\n    def _on_input(self, _sender, data):\n        if len(data) < 3:\n            return\n        dtype = self.ports.get(data[1])\n        if dtype == DEV_DISTANCE:\n            self.distance = data[2] * 10\n        elif dtype == DEV_TILT and len(data) >= 4:\n            self.tilt_x, self.tilt_y = data[2], data[3]\n\n    def _on_button(self, _sender, data):\n        self.button = data[0] == 1\n\n    def output(self, data):\n        # 모터·LED 는 같은 값이면 다시 보내지 않는다 (반복문 안에서 BLE 과부하 방지)\n        key = data[0] if data[0] in (1, 2, 6) else None\n        with self.lock:\n            if key is not None and self.last.get(key) == list(data):\n                return\n            if key is not None:\n                self.last[key] = list(data)\n            self.call(self._write(CH_OUTPUT_COMMAND, data))\n\n    def disconnect(self):\n        if self.client and self.client.is_connected:\n            try:\n                self.call(self.client.disconnect(), timeout=5)\n            except Exception:\n                pass\n\n\n_hub = None\n_running = threading.Event()\n_handlers = {\"start\": [], \"button\": [], \"when\": [], \"key\": []}\n_m_power = {1: 100, 2: 100}\n_m_dir = {1: 1, 2: 1}\n_m_on = {1: False, 2: False}\n_t0 = time.monotonic()\n_keys = set()\n_key_events = []  # 눌린 키 이름 대기열 (메인 루프에서 처리)\n_key_listener = None\n\n\ndef _check():\n    if not _running.is_set():\n        raise _Stopped()\n\n\ndef _ports(p):\n    return [1, 2] if int(p) == 0 else [max(1, min(2, int(p)))]\n\n\ndef _send_motor(port):\n    if not _m_on[port]:\n        val = 0\n    else:\n        p = max(0, min(100, float(_m_power[port])))\n        val = 0 if p == 0 else round(10 + (p - 1) * 90 / 99)\n        val *= _m_dir[port]\n    _hub.output([port, 1, 1, int(val) & 0xFF])\n\n\n# ---------------------------------------------------------------- 블록과 1:1 로 대응하는 함수\ndef motor_on(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_on[k] = True\n        _send_motor(k)\n\n\ndef motor_off(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_on[k] = False\n        _hub.output([k, 1, 1, 127])  # 브레이크\n\n\ndef motor_on_for(port, seconds):\n    motor_on(port)\n    wait(seconds)\n    motor_off(port)\n\n\ndef motor_power(port, power):\n    _check()\n    for k in _ports(port):\n        _m_power[k] = max(0, min(100, float(power)))\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef motor_direction(port, direction):\n    _check()\n    for k in _ports(port):\n        _m_dir[k] = -1 if float(direction) < 0 else 1\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef motor_reverse(port=ALL):\n    _check()\n    for k in _ports(port):\n        _m_dir[k] *= -1\n        if _m_on[k]:\n            _send_motor(k)\n\n\ndef light_rgb(r, g, b):\n    _check()\n    c = [max(0, min(255, int(round(float(x))))) for x in (r, g, b)]\n    _hub.output([6, 4, 3] + c)\n\n\ndef light_color(color):\n    light_rgb(*color)\n\n\ndef light_off():\n    light_rgb(0, 0, 0)\n\n\ndef play_tone(frequency, seconds):\n    _check()\n    f = max(20, min(20000, int(round(float(frequency)))))\n    ms = max(0, min(65535, int(round(float(seconds) * 1000))))\n    _hub.output([5, 2, 4, f & 0xFF, (f >> 8) & 0xFF, ms & 0xFF, (ms >> 8) & 0xFF])\n    wait(ms / 1000)\n\n\ndef stop_sound():\n    _check()\n    _hub.output([5, 3, 0])\n\n\ndef distance():\n    return round(_hub.distance)\n\n\ndef tilt_angle(direction):\n    x, y = _hub.tilt_x, _hub.tilt_y\n    if direction == UP:\n        return 256 - y if y > 45 else -y\n    if direction == DOWN:\n        return y - 256 if y > 45 else y\n    if direction == LEFT:\n        return 256 - x if x > 45 else -x\n    if direction == RIGHT:\n        return x - 256 if x > 45 else x\n    return 0\n\n\ndef is_tilted(direction=ANY):\n    if direction == ANY:\n        return any(tilt_angle(d) >= TILT_THRESHOLD for d in (UP, DOWN, LEFT, RIGHT))\n    return tilt_angle(direction) >= TILT_THRESHOLD\n\n\ndef is_button_pressed():\n    return bool(_hub.button)\n\n\n# ---------------------------------------------------------------- PC 키보드\ndef _key_name(key):\n    \"\"\"pynput 키 → 블록에서 쓰는 이름 ('space', 'up', 'a', '1' …). 한/영 상태와 무관하게 동작.\"\"\"\n    from pynput import keyboard as kb\n    special = {kb.Key.space: \"space\", kb.Key.enter: \"enter\", kb.Key.up: \"up\",\n               kb.Key.down: \"down\", kb.Key.left: \"left\", kb.Key.right: \"right\"}\n    if key in special:\n        return special[key]\n    vk = getattr(key, \"vk\", None)\n    if vk is not None:\n        if 65 <= vk <= 90:   # Windows 가상키 A~Z\n            return chr(vk).lower()\n        if 48 <= vk <= 57:\n            return chr(vk)\n        if 96 <= vk <= 105:  # 숫자 키패드\n            return str(vk - 96)\n    ch = getattr(key, \"char\", None)\n    if ch and ch.isascii() and ch.isalnum():\n        return ch.lower()\n    return None\n\n\ndef _start_keyboard():\n    global _key_listener\n    if _key_listener is not None:\n        return\n    try:\n        from pynput import keyboard as kb\n    except ImportError:\n        print(\"키보드 블록을 쓰려면  pip install pynput  을 먼저 실행하세요.\")\n        return\n\n    def press(key):\n        k = _key_name(key)\n        if k and k not in _keys:\n            _keys.add(k)\n            _key_events.append(k)\n\n    def release(key):\n        _keys.discard(_key_name(key))\n\n    _key_listener = kb.Listener(on_press=press, on_release=release)\n    _key_listener.daemon = True\n    _key_listener.start()\n\n\ndef is_key_pressed(key=\"any\"):\n    _start_keyboard()\n    return bool(_keys) if key == \"any\" else key in _keys\n\n\ndef timer():\n    return round(time.monotonic() - _t0, 2)\n\n\ndef reset_timer():\n    global _t0\n    _t0 = time.monotonic()\n\n\ndef wait(seconds):\n    _check()\n    end = time.monotonic() + max(0.0, float(seconds))\n    while True:\n        left = end - time.monotonic()\n        if left <= 0:\n            break\n        time.sleep(min(left, 0.04))\n        _check()\n\n\ndef wait_until(condition):\n    _check()\n    while not condition():\n        time.sleep(0.02)\n        _check()\n\n\ndef stop_all():\n    _running.clear()\n    raise _Stopped()\n\n\n\n# ---------------------------------------------------------------- AI 카메라 (mediapipe + opencv)\n# 웹의 위두 메이커스와 같은 규칙: 거울 화면 기준 x 0(왼쪽)~100(오른쪽), y 0(아래)~100(위), 안 보이면 -1\n_MODEL_URLS = {\n    \"pose\": \"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task\",\n    \"hand\": \"https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task\",\n    \"object\": \"https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite\",\n    \"learn\": \"https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite\",\n}\n_KNN_K, _CONF_MIN = 7, 60\n_learn_classes = []   # [(name, numpy 배열 N×D)]\n_learn_colors = {}    # name → (hue, hue_range, min_s, min_v)\n_BODY = {\"NOSE\": 0, \"LEFT_SHOULDER\": 11, \"RIGHT_SHOULDER\": 12, \"LEFT_ELBOW\": 13, \"RIGHT_ELBOW\": 14,\n         \"LEFT_WRIST\": 15, \"RIGHT_WRIST\": 16, \"LEFT_HIP\": 23, \"RIGHT_HIP\": 24, \"LEFT_KNEE\": 25,\n         \"RIGHT_KNEE\": 26, \"LEFT_ANKLE\": 27, \"RIGHT_ANKLE\": 28}\n_POSE_LINES = [(11, 12), (11, 13), (13, 15), (12, 14), (14, 16), (11, 23), (12, 24), (23, 24),\n               (23, 25), (25, 27), (24, 26), (26, 28)]\n_HAND_LINES = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8), (5, 9), (9, 10), (10, 11),\n               (11, 12), (9, 13), (13, 14), (14, 15), (15, 16), (13, 17), (17, 18), (18, 19), (19, 20), (0, 17)]\n_COLOR_RULES = {  # H 0~360, S·V 0~1\n    \"red\": lambda h, s, v: ((h < 15) | (h > 340)) & (s > 0.5) & (v > 0.3),\n    \"green\": lambda h, s, v: (h > 85) & (h < 160) & (s > 0.4) & (v > 0.25),\n    \"blue\": lambda h, s, v: (h > 195) & (h < 255) & (s > 0.45) & (v > 0.25),\n    \"yellow\": lambda h, s, v: (h > 42) & (h < 68) & (s > 0.45) & (v > 0.45),\n}\n\n\nclass _Camera:\n    def __init__(self):\n        self.lock = threading.Lock()\n        self.cap = None\n        self.tasks = {}\n        self.want = set()\n        self.pose = None\n        self.hand = None      # (landmarks, gesture)\n        self.objects = []     # dict(name, x, y, score, box)\n        self.colors = {}\n        self.view = None\n        self.thread = None\n        self.closed = False\n        self.done = set()   # 한 번 이상 처리된 기능\n        self.pred = None     # (클래스 이름, 확신도 %, {이름: %})\n\n    # --- 준비 ---\n    def _libs(self):\n        try:\n            import cv2  # noqa: F401\n            import mediapipe  # noqa: F401\n        except ImportError:\n            raise SystemExit(\"AI 카메라 블록을 쓰려면  pip install mediapipe opencv-python  을 먼저 실행하세요.\")\n\n    def _model(self, mode):\n        import os\n        import urllib.request\n        folder = os.path.join(os.path.expanduser(\"~\"), \".wedo2_models\")\n        os.makedirs(folder, exist_ok=True)\n        path = os.path.join(folder, _MODEL_URLS[mode].rsplit(\"/\", 1)[1])\n        if not os.path.exists(path):\n            print(f\"AI 모델 받는 중… ({mode})\")\n            urllib.request.urlretrieve(_MODEL_URLS[mode], path + \".part\")\n            os.replace(path + \".part\", path)\n        return path\n\n    def need(self, mode):\n        if mode in self.want or self.closed:\n            return\n        self._libs()\n        with self.lock:\n            if mode in self.want:\n                return\n            import cv2\n            from mediapipe.tasks import python as mpt\n            from mediapipe.tasks.python import vision\n            if self.cap is None:\n                self.cap = cv2.VideoCapture(0)\n                if not self.cap.isOpened():\n                    raise RuntimeError(\"카메라를 열 수 없습니다.\")\n            if mode != \"color\":\n                base = mpt.BaseOptions(model_asset_path=self._model(mode))\n                video = vision.RunningMode.VIDEO\n                if mode == \"pose\":\n                    self.tasks[mode] = vision.PoseLandmarker.create_from_options(\n                        vision.PoseLandmarkerOptions(base_options=base, running_mode=video, num_poses=1))\n                elif mode == \"hand\":\n                    self.tasks[mode] = vision.GestureRecognizer.create_from_options(\n                        vision.GestureRecognizerOptions(base_options=base, running_mode=video, num_hands=1))\n                elif mode == \"learn\":\n                    self.tasks[mode] = vision.ImageEmbedder.create_from_options(\n                        vision.ImageEmbedderOptions(base_options=base, running_mode=video, l2_normalize=True, quantize=False))\n                else:\n                    self.tasks[mode] = vision.ObjectDetector.create_from_options(\n                        vision.ObjectDetectorOptions(base_options=base, running_mode=video,\n                                                     score_threshold=0.4, max_results=8))\n            self.want.add(mode)\n            if self.thread is None:\n                self.thread = threading.Thread(target=self._loop, daemon=True)\n                self.thread.start()\n        # 이 기능의 첫 결과가 나올 때까지 기다린다 (최대 5초)\n        end = time.monotonic() + 5\n        while mode not in self.done and time.monotonic() < end and not self.closed:\n            time.sleep(0.02)\n\n    # --- 매 프레임 ---\n    def _loop(self):\n        import cv2\n        import numpy as np\n        import mediapipe as mp\n        turn = 0\n        last_ts = 0\n        while not self.closed:\n            ok, frame = self.cap.read()\n            if not ok:\n                time.sleep(0.02)\n                continue\n            ts = max(last_ts + 1, int(time.monotonic() * 1000))\n            last_ts = ts\n            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)\n            image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)\n            heavy = [m for m in (\"pose\", \"hand\", \"object\", \"learn\") if m in self.want]\n            pick = heavy[turn % len(heavy)] if heavy else None\n            turn += 1\n            try:\n                if pick == \"pose\":\n                    r = self.tasks[\"pose\"].detect_for_video(image, ts)\n                    self.pose = r.pose_landmarks[0] if r.pose_landmarks else None\n                    self.done.add(\"pose\")\n                elif pick == \"hand\":\n                    r = self.tasks[\"hand\"].recognize_for_video(image, ts)\n                    if r.hand_landmarks:\n                        g = r.gestures[0][0].category_name if r.gestures and r.gestures[0] else \"None\"\n                        self.hand = (r.hand_landmarks[0], g)\n                    else:\n                        self.hand = None\n                    self.done.add(\"hand\")\n                elif pick == \"learn\":\n                    r = self.tasks[\"learn\"].embed_for_video(image, ts)\n                    if r.embeddings:\n                        self.pred = _knn(np.asarray(r.embeddings[0].embedding, dtype=np.float32))\n                    self.done.add(\"learn\")\n                elif pick == \"object\":\n                    r = self.tasks[\"object\"].detect_for_video(image, ts)\n                    h, w = frame.shape[:2]\n                    objs = []\n                    for d in r.detections:\n                        b, c = d.bounding_box, d.categories[0]\n                        cx, cy = (b.origin_x + b.width / 2) / w, (b.origin_y + b.height / 2) / h\n                        objs.append({\"name\": c.category_name, \"score\": c.score,\n                                     \"x\": round((1 - cx) * 100, 1), \"y\": round((1 - cy) * 100, 1),\n                                     \"box\": (b.origin_x, b.origin_y, b.width, b.height)})\n                    self.objects = objs\n                    self.done.add(\"object\")\n            except Exception:  # noqa: BLE001\n                pass\n            if \"color\" in self.want or _learn_colors:\n                small = cv2.flip(cv2.resize(frame, (80, 60)), 1)\n                hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV).astype(np.float32)\n                H, S, V = hsv[..., 0] * 2, hsv[..., 1] / 255, hsv[..., 2] / 255\n                ys, xs = np.mgrid[0:60, 0:80]\n                out = {}\n                rules = dict(_COLOR_RULES)\n                for nm, (hue, hr, smin, vmin) in _learn_colors.items():\n                    dist = np.abs(H - hue) % 360\n                    dist = np.minimum(dist, 360 - dist)\n                    rules[nm] = (lambda d, r, a, b: (lambda h, s, v: (d <= r) & (s >= a) & (v >= b)))(dist, hr, smin, vmin)\n                for k, rule in rules.items():\n                    m = rule(H, S, V)\n                    n = int(m.sum())\n                    size = round(n / 4800 * 100, 1)\n                    if size >= 1.5:\n                        out[k] = {\"seen\": True, \"x\": round(xs[m].mean() / 79 * 100, 1),\n                                  \"y\": round(100 - ys[m].mean() / 59 * 100, 1), \"size\": size}\n                    else:\n                        out[k] = {\"seen\": False, \"x\": -1, \"y\": -1, \"size\": size}\n                self.colors = out\n                self.done.add(\"color\")\n            self.view = self._draw(frame)\n\n    def _draw(self, frame):\n        import cv2\n        h, w = frame.shape[:2]\n        img = cv2.flip(frame, 1)\n        P = lambda lm: (int((1 - lm.x) * w), int(lm.y * h))  # noqa: E731\n        if self.pose:\n            for a, b in _POSE_LINES:\n                if self.pose[a].visibility > 0.4 and self.pose[b].visibility > 0.4:\n                    cv2.line(img, P(self.pose[a]), P(self.pose[b]), (255, 229, 0), 3)\n            for i in _BODY.values():\n                if self.pose[i].visibility > 0.4:\n                    cv2.circle(img, P(self.pose[i]), 5, (255, 255, 255), -1)\n        if self.hand:\n            lm = self.hand[0]\n            for a, b in _HAND_LINES:\n                cv2.line(img, P(lm[a]), P(lm[b]), (10, 214, 255), 2)\n            cv2.putText(img, self.hand[1], (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (10, 214, 255), 2)\n        if self.pred and self.pred[0]:\n            cv2.putText(img, f\"{self.pred[0]} {self.pred[1]}%\", (10, h - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.9,\n                        (237, 58, 124) if self.pred[1] >= _CONF_MIN else (160, 160, 160), 2)\n        for o in self.objects:\n            x, y, bw, bh = o[\"box\"]\n            x = w - x - bw\n            cv2.rectangle(img, (int(x), int(y)), (int(x + bw), int(y + bh)), (88, 209, 48), 2)\n            cv2.putText(img, f'{o[\"name\"]} {int(o[\"score\"] * 100)}%', (int(x), int(y) - 6),\n                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (88, 209, 48), 2)\n        for k, c in self.colors.items():\n            if c[\"seen\"]:\n                cv2.circle(img, (int(c[\"x\"] / 100 * w), int((1 - c[\"y\"] / 100) * h)), 12, (255, 255, 255), 3)\n        return img\n\n    def show(self):\n        \"\"\"메인 스레드에서 부른다 (macOS 는 창을 메인 스레드에서만 그릴 수 있음).\"\"\"\n        if self.view is None or self.closed:\n            return\n        import cv2\n        cv2.imshow(\"WeDo Makers - AI Camera (Q: close)\", self.view)\n        if cv2.waitKey(1) & 0xFF in (ord(\"q\"), ord(\"Q\")):\n            self.close()\n            _running.clear()\n\n    def close(self):\n        self.closed = True\n        if self.thread is not None:\n            self.thread.join(timeout=1)\n        for task in self.tasks.values():\n            try:\n                task.close()\n            except Exception:  # noqa: BLE001\n                pass\n        self.tasks = {}\n        try:\n            import cv2\n            if self.cap is not None:\n                self.cap.release()\n            cv2.destroyAllWindows()\n        except Exception:  # noqa: BLE001\n            pass\n\n    # --- 값 읽기 ---\n    def lm(self, part):\n        if not self.pose:\n            return None\n        L = self.pose[_BODY[part]]\n        return L if L.visibility >= 0.5 else None\n\n\n_cam = _Camera()\n\n\ndef _clamp100(v):\n    return round(max(0.0, min(100.0, v)), 1)\n\n\ndef is_person_seen():\n    _cam.need(\"pose\")\n    return any(_cam.lm(p) for p in (\"LEFT_SHOULDER\", \"RIGHT_SHOULDER\", \"NOSE\"))\n\n\ndef body_x(part):\n    _cam.need(\"pose\")\n    L = _cam.lm(part)\n    return _clamp100((1 - L.x) * 100) if L else -1\n\n\ndef body_y(part):\n    _cam.need(\"pose\")\n    L = _cam.lm(part)\n    return _clamp100((1 - L.y) * 100) if L else -1\n\n\ndef is_arm_up(side=RIGHT):\n    _cam.need(\"pose\")\n    if side == BOTH:\n        return is_arm_up(LEFT) and is_arm_up(RIGHT)\n    w, s = _cam.lm(side + \"_WRIST\"), _cam.lm(side + \"_SHOULDER\")\n    return bool(w and s and w.y < s.y - 0.05)\n\n\ndef elbow_angle(side=RIGHT):\n    import math\n    _cam.need(\"pose\")\n    s, e, w = _cam.lm(side + \"_SHOULDER\"), _cam.lm(side + \"_ELBOW\"), _cam.lm(side + \"_WRIST\")\n    if not (s and e and w):\n        return -1\n    a, b = (s.x - e.x, s.y - e.y), (w.x - e.x, w.y - e.y)\n    cos = (a[0] * b[0] + a[1] * b[1]) / ((math.hypot(*a) * math.hypot(*b)) or 1)\n    return round(math.degrees(math.acos(max(-1.0, min(1.0, cos)))))\n\n\ndef shoulder_tilt():\n    \"\"\"화면 오른쪽으로 몸을 기울이면 +, 왼쪽이면 − (도)\"\"\"\n    import math\n    _cam.need(\"pose\")\n    l, r = _cam.lm(\"LEFT_SHOULDER\"), _cam.lm(\"RIGHT_SHOULDER\")\n    if not (l and r):\n        return 0\n    L, R = (1 - l.x, l.y), (1 - r.x, r.y)\n    a, b = (L, R) if L[0] < R[0] else (R, L)\n    return round(math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])))\n\n\ndef is_hand_seen():\n    _cam.need(\"hand\")\n    return _cam.hand is not None\n\n\ndef is_gesture(name):\n    \"\"\"'Closed_Fist', 'Open_Palm', 'Pointing_Up', 'Thumb_Up', 'Thumb_Down', 'Victory', 'ILoveYou'\"\"\"\n    _cam.need(\"hand\")\n    return bool(_cam.hand and _cam.hand[1] == name)\n\n\ndef finger_count():\n    import math\n    _cam.need(\"hand\")\n    if not _cam.hand:\n        return 0\n    lm = _cam.hand[0]\n    d = lambda a, b: math.hypot(lm[a].x - lm[b].x, lm[a].y - lm[b].y)  # noqa: E731\n    n = sum(1 for tip, pip in ((8, 6), (12, 10), (16, 14), (20, 18)) if d(tip, 0) > d(pip, 0) * 1.1)\n    if d(4, 9) > d(3, 9) * 1.12 and d(4, 17) > d(5, 17) * 0.9:\n        n += 1\n    return n\n\n\ndef hand_x():\n    _cam.need(\"hand\")\n    return _clamp100((1 - _cam.hand[0][9].x) * 100) if _cam.hand else -1\n\n\ndef hand_y():\n    _cam.need(\"hand\")\n    return _clamp100((1 - _cam.hand[0][9].y) * 100) if _cam.hand else -1\n\n\ndef _objs(name):\n    _cam.need(\"object\")\n    return sorted((o for o in _cam.objects if name == \"any\" or o[\"name\"] == name), key=lambda o: -o[\"score\"])\n\n\ndef is_object_seen(name):\n    \"\"\"COCO 이름: 'person', 'cup', 'bottle', 'sports ball', 'cell phone', 'book' … 또는 'any'\"\"\"\n    return bool(_objs(name))\n\n\ndef object_x(name):\n    o = _objs(name)\n    return o[0][\"x\"] if o else -1\n\n\ndef object_y(name):\n    o = _objs(name)\n    return o[0][\"y\"] if o else -1\n\n\ndef object_count(name):\n    return len(_objs(name))\n\n\ndef _color(name):\n    \"\"\"기본 색 'red'·'green'·'blue'·'yellow' 또는 learn_color 로 등록한 이름\"\"\"\n    _cam.need(\"color\")\n    return _cam.colors.get(name, {\"seen\": False, \"x\": -1, \"y\": -1, \"size\": 0})\n\n\ndef is_color_seen(name):\n    \"\"\"'red', 'green', 'blue', 'yellow'\"\"\"\n    return _color(name)[\"seen\"]\n\n\ndef color_x(name):\n    return _color(name)[\"x\"]\n\n\ndef color_y(name):\n    return _color(name)[\"y\"]\n\n\ndef color_size(name):\n    return _color(name)[\"size\"]\n\n\n\n# ---------------------------------------------------------------- AI 학습 (위두 메이커스 '학습 파일'과 같은 형식)\ndef load_learning(path):\n    \"\"\"위두 메이커스의 'Python용 학습 파일 저장' 으로 받은 .json 을 불러온다 (사물 학습 + 학습한 색).\"\"\"\n    import base64\n    import json\n    import os\n    import numpy as np\n    if not os.path.isabs(path):\n        main = sys.modules.get(\"__main__\")\n        base = os.path.dirname(os.path.abspath(getattr(main, \"__file__\", \"\") or \".\"))\n        if os.path.exists(os.path.join(base, path)):\n            path = os.path.join(base, path)\n    with open(path, encoding=\"utf-8\") as f:\n        data = json.load(f)\n    _learn_classes.clear()\n    for c in data.get(\"classes\", []):\n        rows = []\n        for b64 in c.get(\"samples\", []):\n            v = np.frombuffer(base64.b64decode(b64), dtype=np.int8).astype(np.float32) / 127\n            n = float(np.linalg.norm(v)) or 1.0\n            rows.append(v / n)\n        if len(rows) >= 3:\n            _learn_classes.append((c[\"name\"], np.stack(rows)))\n    for c in data.get(\"colors\", []):\n        learn_color(c[\"name\"], c[\"h\"], c[\"hr\"], c[\"smin\"], c[\"vmin\"])\n    print(f\"학습 파일을 불러왔습니다: 사물 {len(_learn_classes)}개, 색 {len(data.get('colors', []))}개\")\n\n\ndef learn_color(name, hue, hue_range=14, min_s=0.3, min_v=0.2):\n    \"\"\"학습한 색 등록 — hue 0~360, hue_range ±도, min_s·min_v 0~1\"\"\"\n    _learn_colors[name] = (float(hue), float(hue_range), float(min_s), float(min_v))\n\n\ndef _knn(e):\n    import numpy as np\n    if not _learn_classes:\n        return None\n    names, sims = [], []\n    for nm, mat in _learn_classes:\n        sims.append(mat @ e)\n        names += [nm] * len(mat)\n    sims = np.concatenate(sims)\n    k = min(_KNN_K, len(sims))\n    top = np.argsort(-sims)[:k]\n    votes, total = {}, {}\n    for i in top:\n        votes[names[i]] = votes.get(names[i], 0) + 1\n        total[names[i]] = total.get(names[i], 0) + float(sims[i])\n    best = max(votes, key=lambda n: (votes[n], total[n]))\n    scores = {nm: round(votes.get(nm, 0) / k * 100) for nm, _ in _learn_classes}\n    return best, scores[best], scores\n\n\ndef is_learned(name):\n    \"\"\"학습한 사물이 name 인가? (확신도 60% 이상)\"\"\"\n    _cam.need(\"learn\")\n    p = _cam.pred\n    return bool(p and p[0] == name and p[1] >= _CONF_MIN)\n\n\ndef learned_name():\n    _cam.need(\"learn\")\n    p = _cam.pred\n    return p[0] if p and p[1] >= _CONF_MIN else \"\"\n\n\ndef learned_confidence(name):\n    _cam.need(\"learn\")\n    p = _cam.pred\n    return p[2].get(name, 0) if p else 0\n\n\n# ---------------------------------------------------------------- 이벤트 데코레이터\ndef on_start(fn):\n    _handlers[\"start\"].append(fn)\n    return fn\n\n\ndef on_button(fn):\n    _handlers[\"button\"].append({\"fn\": fn, \"busy\": False})\n    return fn\n\n\ndef on_key(key):\n    \"\"\"@on_key('space') — PC 키보드의 키를 누를 때마다 실행\"\"\"\n    def deco(fn):\n        _handlers[\"key\"].append({\"key\": key, \"fn\": fn, \"busy\": False})\n        return fn\n    return deco\n\n\ndef when(condition):\n    def deco(fn):\n        _handlers[\"when\"].append({\"cond\": condition, \"fn\": fn, \"busy\": False, \"prev\": True})\n        return fn\n    return deco\n\n\ndef _thread(fn, holder=None):\n    def target():\n        try:\n            fn()\n        except _Stopped:\n            pass\n        except Exception as e:  # noqa: BLE001\n            print(f\"오류: {e!r}\")\n            _running.clear()\n        finally:\n            if holder is not None:\n                holder[\"busy\"] = False\n\n    t = threading.Thread(target=target, daemon=True)\n    t.start()\n    return t\n\n\ndef _fire(h):\n    if h[\"busy\"]:\n        return\n    h[\"busy\"] = True\n    _thread(h[\"fn\"], h)\n\n\ndef _safe(cond):\n    try:\n        return bool(cond())\n    except Exception:  # noqa: BLE001\n        return False\n\n\ndef _all_stop():\n    for k in (1, 2):\n        _m_on[k] = False\n        try:\n            _hub.output([k, 1, 1, 0])\n        except Exception:  # noqa: BLE001\n            pass\n    try:\n        _hub.output([5, 3, 0])\n    except Exception:  # noqa: BLE001\n        pass\n\n\ndef run(scan_timeout=15):\n    \"\"\"허브에 연결하고 등록된 이벤트 함수들을 실행합니다. Ctrl+C 로 멈춥니다.\"\"\"\n    global _hub\n    _hub = _Hub()\n    try:\n        _hub.call(_hub._connect(scan_timeout), timeout=scan_timeout + 20)\n    except Exception as e:  # noqa: BLE001\n        print(f\"연결 실패: {e}\")\n        return\n    reset_timer()\n    if _handlers[\"key\"]:\n        _start_keyboard()\n    _running.set()\n    starts = [_thread(fn) for fn in _handlers[\"start\"]]\n    for h in _handlers[\"when\"]:\n        h[\"prev\"] = _safe(h[\"cond\"])\n    has_events = bool(_handlers[\"button\"] or _handlers[\"when\"] or _handlers[\"key\"])\n    prev_btn = is_button_pressed()\n    try:\n        while _running.is_set():\n            btn = is_button_pressed()\n            if btn and not prev_btn:\n                for h in _handlers[\"button\"]:\n                    _fire(h)\n            prev_btn = btn\n            while _key_events:\n                k = _key_events.pop(0)\n                for h in _handlers[\"key\"]:\n                    if h[\"key\"] in (k, \"any\"):\n                        _fire(h)\n            for h in _handlers[\"when\"]:\n                c = _safe(h[\"cond\"])\n                if c and not h[\"prev\"]:\n                    _fire(h)\n                h[\"prev\"] = c\n            if not has_events and not any(t.is_alive() for t in starts):\n                break\n            if _cam.thread is not None:\n                _cam.show()\n            if not _hub.client.is_connected:\n                print(\"허브 연결이 끊어졌습니다.\")\n                break\n            time.sleep(0.025)\n    except KeyboardInterrupt:\n        print(\"\\n멈춤\")\n    finally:\n        _running.clear()\n        time.sleep(0.1)\n        _all_stop()\n        if _cam.thread is not None:\n            _cam.close()\n        _hub.disconnect()\n        print(\"프로그램 종료\")\n";</script>
 <script>/* ===== 다국어: 한국어 · English · 日本語 · 简体中文 · Español ===== */
 (function () {
   const LANGS = [['ko', '한국어'], ['en', 'English'], ['ja', '日本語'], ['zh', '简体中文'], ['es', 'Español']];
@@ -5268,6 +5376,190 @@ return Blockly.Msg;
       '<p class="muted">AI カメラのブロックを使ったら <code>pip install mediapipe opencv-python</code> も必要です。初回にモデルを自動で取得し、カメラ画面は <kbd>Q</kbd> で閉じます。</p>',
       '<p class="muted">若使用了 AI 摄像头积木，还需 <code>pip install mediapipe opencv-python</code>。首次运行会自动下载模型，按 <kbd>Q</kbd> 关闭摄像头窗口。</p>',
       '<p class="muted">Si usaste bloques de cámara IA, ejecuta también <code>pip install mediapipe opencv-python</code>. Los modelos se descargan la primera vez; cierra la ventana con <kbd>Q</kbd>.</p>'],
+
+    /* ---------- AI 학습 (사물 학습 · 색 학습) ---------- */
+    cam_m_learn: ['학습한 사물', 'Learned objects', '学習した物', '学习的物体', 'Objetos aprendidos'],
+    learn_btn: ['🧠 AI 학습하기', '🧠 Teach the AI', '🧠 AI に教える', '🧠 训练 AI', '🧠 Enseñar a la IA'],
+    learn_title: ['AI 학습', 'Teach the AI', 'AI 学習', 'AI 训练', 'Enseñar a la IA'],
+    learn_tab_obj: ['사물 학습', 'Object learning', '物の学習', '物体学习', 'Aprender objetos'],
+    learn_tab_color: ['색 학습', 'Color learning', '色の学習', '颜色学习', 'Aprender colores'],
+    learn_tab_guide: ['학습 방법 안내', 'How to teach', '学習のしかた', '训练方法', 'Cómo enseñar'],
+    learn_none: ['(먼저 학습하세요)', '(teach first)', '（先に学習）', '（请先训练）', '(enseña primero)'],
+    learn_cls_default: ['물건', 'Object', '物', '物体', 'Objeto'],
+    learn_cls_bg: ['배경 (아무것도 없음)', 'Background (nothing)', '背景（なにもない）', '背景（什么都没有）', 'Fondo (nada)'],
+    learn_add_cls: ['＋ 클래스 추가', '＋ Add class', '＋ クラスを追加', '＋ 添加类别', '＋ Añadir clase'],
+    learn_hold: ['누르고 있으면 촬영', 'Hold to record', '押している間撮影', '按住拍摄', 'Mantén para grabar'],
+    learn_clear: ['사진 지우기', 'Clear photos', '写真を消す', '清除照片', 'Borrar fotos'],
+    learn_delete: ['클래스 삭제', 'Delete class', 'クラスを削除', '删除类别', 'Eliminar clase'],
+    learn_cdelete: ['색 삭제', 'Delete color', '色を削除', '删除颜色', 'Eliminar color'],
+    learn_photos: ['장', 'photos', '枚', '张', 'fotos'],
+    learn_train: ['학습시키기', 'Train', '学習させる', '开始训练', 'Entrenar'],
+    learn_trained: ['학습 완료', 'Trained', '学習完了', '训练完成', 'Entrenado'],
+    learn_retrain: ['사진이 바뀌었습니다 — 다시 학습시키세요', 'Photos changed — train again', '写真が変わりました — もう一度学習', '照片已更改 — 请重新训练', 'Las fotos cambiaron: vuelve a entrenar'],
+    learn_need: ['클래스 2개 이상에 사진을 3장 이상씩 모으면 학습할 수 있어요.', 'Collect at least 3 photos in 2 or more classes to train.', '2つ以上のクラスに3枚以上ずつ集めると学習できます。', '至少 2 个类别、每个 3 张以上照片才能训练。', 'Reúne al menos 3 fotos en 2 o más clases para entrenar.'],
+    learn_result: ['지금 보이는 것', 'What the AI sees now', 'いま見えているもの', '现在看到的', 'Lo que ve la IA ahora'],
+    learn_test_hint: ['학습시킨 뒤 카메라 앞에 물건을 보여 주면 확신도가 막대로 표시됩니다.', 'After training, show an object to the camera to see the confidence bars.', '学習後、カメラに物を見せると確信度がバーで表示されます。', '训练后把物体给摄像头看，就会显示置信度条。', 'Tras entrenar, enseña un objeto a la cámara para ver las barras de confianza.'],
+    learn_cam_needed: ['학습하려면 카메라를 켜세요.', 'Turn on the camera to teach.', '学習するにはカメラをオンにしてください。', '请先打开摄像头再训练。', 'Enciende la cámara para enseñar.'],
+    learn_export: ['Python용 학습 파일 저장', 'Save learning file for Python', 'Python 用学習ファイルを保存', '保存 Python 用训练文件', 'Guardar archivo para Python'],
+    learn_import: ['학습 파일 불러오기', 'Load learning file', '学習ファイルを読み込む', '载入训练文件', 'Cargar archivo de aprendizaje'],
+    learn_saved_note: ['학습 내용은 프로젝트와 함께 저장됩니다.', 'Learning is saved together with the project.', '学習内容はプロジェクトと一緒に保存されます。', '训练内容会和项目一起保存。', 'Lo aprendido se guarda con el proyecto.'],
+    learn_color_center: ['가운데 네모에 색 물건을 가득 채우고 누르세요', 'Fill the center box with the colored object, then press', '真ん中の四角に色の物をいっぱいに入れて押してください', '让彩色物体填满中间方框后按下', 'Llena el cuadro central con el objeto de color y pulsa'],
+    learn_color_take: ['가운데 색 학습', 'Learn the center color', '真ん中の色を学習', '学习中间的颜色', 'Aprender el color central'],
+    learn_color_fail: ['색이 뚜렷하지 않습니다. 흰색·검정·회색은 학습할 수 없어요. 선명한 색 물건을 가까이 대 보세요.', 'Color is not clear. White, black and gray cannot be learned — hold a vivid object closer.', '色がはっきりしません。白・黒・灰色は学習できません。鮮やかな色の物を近づけて。', '颜色不明显。白、黑、灰无法学习，请把鲜艳的物体靠近。', 'El color no es claro. Blanco, negro y gris no se pueden aprender: acerca un objeto de color vivo.'],
+    learn_color_name: ['색 이름', 'Color name', '色の名前', '颜色名称', 'Nombre del color'],
+    learn_color_default: ['내 색', 'My color', 'わたしの色', '我的颜色', 'Mi color'],
+    learn_color_range: ['허용 범위', 'Tolerance', '許容範囲', '容差', 'Tolerancia'],
+    learn_color_found: ['화면에서 찾음', 'found on screen', '画面で見つけた', '在画面中找到', 'encontrado'],
+    learn_color_missing: ['안 보임', 'not seen', '見えない', '未看到', 'no visible'],
+    learn_color_empty: ['아직 학습한 색이 없습니다.', 'No learned colors yet.', 'まだ学習した色はありません。', '还没有学习的颜色。', 'Aún no hay colores aprendidos.'],
+    learn_rename: ['이름 바꾸기', 'Rename', '名前を変える', '重命名', 'Renombrar'],
+    b_cam_learned_is: ['학습한 사물이 %1 인가?', 'learned object is %1 ?', '学習した物が %1 ？', '学习的物体是 %1？', '¿objeto aprendido es %1?'],
+    b_cam_learned_name: ['학습한 사물 이름', 'learned object name', '学習した物の名前', '学习的物体名称', 'nombre del objeto aprendido'],
+    b_cam_learned_conf: ['%1 확신도 (%%)', '%1 confidence (%%)', '%1 の確信度（%%）', '%1 置信度（%%）', 'confianza de %1 (%%)'],
+    tt_learned: ['AI 학습 창에서 가르친 사물입니다. 확신도 60% 이상일 때 참입니다.', 'An object you taught in the Teach window. True when confidence is 60% or more.', '学習ウィンドウで教えた物です。確信度 60% 以上で真。', '在训练窗口中教过的物体。置信度 60% 以上时为真。', 'Un objeto enseñado en la ventana de aprendizaje. Verdadero con confianza ≥ 60%.'],
+    tt_conf: ['0~100. 비슷한 학습 사진 7장 중 몇 장이 이 클래스인지', '0–100: how many of the 7 most similar training photos belong to this class', '0〜100：よく似た学習写真7枚のうち何枚がこのクラスか', '0~100：最相似的 7 张训练照片中有几张属于此类', '0–100: cuántas de las 7 fotos más parecidas son de esta clase'],
+    tt_learned_color: ['★ 표시는 색 학습으로 가르친 색입니다.', '★ marks colors you taught in Color learning.', '★ は色の学習で教えた色です。', '★ 表示通过颜色学习教的颜色。', '★ indica colores enseñados en «Aprender colores».'],
+    guide_html: [
+`<div class="guide">
+<h4>🧠 AI는 어떻게 배울까요?</h4>
+<p>AI는 사진 한 장을 <b>숫자 1,024개(특징)</b>로 바꿉니다. 학습이란 "이 숫자들은 <b>컵</b>이야" 하고 예시를 많이 알려 주는 것이에요. 새 사진이 들어오면 AI는 <b>가장 비슷한 학습 사진 7장</b>을 찾아 그중 많은 쪽으로 답합니다(최근접 이웃 방법). 그래서 <b>좋은 예시를 많이</b> 줄수록 똑똑해집니다.</p>
+<h4>📦 사물 학습 — 5단계</h4>
+<ol>
+<li><b>무엇을 구분할지 정하기</b> — 예: <i>빨간 컵 / 파란 공 / 배경</i>. <b>배경(아무것도 없음)</b> 클래스는 꼭 두세요. 그래야 물건이 없을 때 "없다"고 답합니다.</li>
+<li><b>사진 모으기</b> — 클래스마다 <b>누르고 있으면 촬영</b>을 눌러 30~50장 모읍니다. 물건을 <b>돌리고, 가까이·멀리, 왼쪽·오른쪽</b>으로 움직이며 찍으세요.</li>
+<li><b>학습시키기</b> — 버튼을 누르면 바로 학습됩니다.</li>
+<li><b>시험하기</b> — 물건을 보여 주며 확신도 막대를 확인합니다. 틀리게 답하면 그 상황의 사진을 <b>더 찍고 다시 학습</b>시키세요.</li>
+<li><b>블록으로 쓰기</b> — <code>학습한 사물이 [빨간 컵] 인가?</code> 를 <code>○ 이 될 때</code> 나 <code>만약</code> 에 넣어 로봇을 움직입니다.</li>
+</ol>
+<p class="tip">💡 <b>잘 배우게 하는 법</b>: 클래스마다 사진 수를 비슷하게 · 실제로 쓸 장소와 조명에서 학습 · 배경은 단순하게 · 손이 함께 찍히면 AI가 "손"을 배울 수 있으니 <b>배경 클래스에도 손을 넣어</b> 찍기</p>
+<h4>🎨 색 학습 — 4단계</h4>
+<ol>
+<li>색 물건(공, 색종이 등)을 카메라 화면 <b>가운데 네모 안에 가득</b> 차게 댑니다.</li>
+<li><b>가운데 색 학습</b>을 누르고 이름을 정합니다(예: <i>형광 연두</i>).</li>
+<li><b>허용 범위</b>를 조절합니다. 너무 넓으면 비슷한 다른 색까지 잡히고, 너무 좁으면 그림자 진 곳을 놓칩니다. 화면에 동그라미가 물건 위에 잘 붙는지 보며 맞추세요.</li>
+<li>블록의 색 목록에 <b>★ 형광 연두</b>가 생깁니다. <code>[★ 형광 연두] 색의 x 위치</code> 로 공을 따라가는 로봇을 만들어 보세요.</li>
+</ol>
+<p class="tip">💡 흰색·검정·회색은 "색깔"이 없어서 학습이 어렵습니다. 선명한 색일수록 잘 찾고, 조명이 바뀌면 다시 학습하세요.</p>
+<h4>🤖 예제 아이디어</h4>
+<ul>
+<li><b>분류 로봇</b>: <code>학습한 사물이 [빨간 컵] 이 될 때</code> → 포트 1 모터 시계방향 1초, <code>[파란 공]</code> 이면 반시계방향</li>
+<li><b>색 따라가기</b>: 무한 반복 — <code>[★ 내 색] 색의 x 위치</code> 가 40보다 작으면 왼쪽, 60보다 크면 오른쪽으로 모터 방향 바꾸기</li>
+<li><b>확신도 게이지</b>: <code>모터 파워를 [[물건 1] 확신도] % 로 정하기</code> — AI가 확실할수록 빨리 돕니다</li>
+</ul>
+<p class="muted">학습 내용은 프로젝트에 함께 저장됩니다. PC에서 Python으로 실행하려면 <b>Python용 학습 파일 저장</b>으로 받은 파일을 .py 파일 옆에 두세요.</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 How does the AI learn?</h4>
+<p>The AI turns each photo into <b>1,024 numbers (features)</b>. Teaching means giving many examples: "these numbers are a <b>cup</b>". For a new photo the AI finds the <b>7 most similar training photos</b> and answers with the class most of them belong to (nearest-neighbour method). <b>More good examples</b> make it smarter.</p>
+<h4>📦 Object learning — 5 steps</h4>
+<ol>
+<li><b>Decide what to tell apart</b> — e.g. <i>red cup / blue ball / background</i>. Always keep a <b>Background (nothing)</b> class so the AI can say "nothing is there".</li>
+<li><b>Collect photos</b> — for each class, press <b>Hold to record</b> to collect 30–50 photos. <b>Turn</b> the object, move it <b>closer/farther and left/right</b>.</li>
+<li><b>Train</b> — press the button; training is instant.</li>
+<li><b>Test</b> — show the object and watch the confidence bars. If it is wrong, <b>record more photos</b> of that situation and train again.</li>
+<li><b>Use blocks</b> — put <code>learned object is [red cup]?</code> in <code>when ○</code> or <code>if</code> to move the robot.</li>
+</ol>
+<p class="tip">💡 <b>Tips</b>: similar number of photos per class · teach in the same place and lighting you will use · keep the background simple · if your hand is in the photos the AI may learn "hand", so <b>also record your hand in the Background class</b></p>
+<h4>🎨 Color learning — 4 steps</h4>
+<ol>
+<li>Hold a colored object (ball, paper…) so it <b>fills the center box</b> of the camera view.</li>
+<li>Press <b>Learn the center color</b> and give it a name (e.g. <i>neon green</i>).</li>
+<li>Adjust the <b>tolerance</b>: too wide picks up similar colors, too narrow misses shadows. Check that the dot sticks to the object.</li>
+<li><b>★ neon green</b> appears in the color lists of the blocks. Try <code>color [★ neon green] x</code> to build a ball-following robot.</li>
+</ol>
+<p class="tip">💡 White, black and gray have no hue, so they are hard to learn. Vivid colors work best; teach again when the lighting changes.</p>
+<h4>🤖 Project ideas</h4>
+<ul>
+<li><b>Sorting robot</b>: <code>when learned object is [red cup]</code> → port 1 motor clockwise 1 s; <code>[blue ball]</code> → counterclockwise</li>
+<li><b>Color follower</b>: forever — if <code>color [★ my color] x</code> &lt; 40 turn left, &gt; 60 turn right</li>
+<li><b>Confidence gauge</b>: <code>set motor power to [[Object 1] confidence] %</code> — the surer the AI, the faster it spins</li>
+</ul>
+<p class="muted">Learning is saved with the project. To run with Python on a PC, put the file from <b>Save learning file for Python</b> next to your .py file.</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 AI はどうやって学ぶの？</h4>
+<p>AI は写真を <b>1,024 個の数（特徴）</b> に変えます。学習とは「この数は<b>コップ</b>だよ」と例をたくさん教えること。新しい写真が来ると、<b>いちばん似ている学習写真 7 枚</b>を探し、多い方で答えます（最近傍法）。<b>よい例をたくさん</b>見せるほど賢くなります。</p>
+<h4>📦 物の学習 — 5 ステップ</h4>
+<ol>
+<li><b>何を見分けるか決める</b> — 例：<i>赤いコップ／青いボール／背景</i>。<b>背景（なにもない）</b>クラスは必ず作りましょう。</li>
+<li><b>写真を集める</b> — クラスごとに<b>押している間撮影</b>で 30〜50 枚。物を<b>回したり、近づけたり遠ざけたり、左右に動かしたり</b>して撮ります。</li>
+<li><b>学習させる</b> — ボタンを押すとすぐに学習します。</li>
+<li><b>試す</b> — 物を見せて確信度のバーを確認。まちがえたら、その場面の写真を<b>追加してもう一度学習</b>。</li>
+<li><b>ブロックで使う</b> — <code>学習した物が [赤いコップ] ？</code> を <code>○ になったとき</code> や <code>もし</code> に入れてロボットを動かします。</li>
+</ol>
+<p class="tip">💡 <b>コツ</b>：クラスごとの枚数をそろえる・実際に使う場所と明るさで学習・背景はシンプルに・手が写ると AI が「手」を覚えるので<b>背景クラスにも手を入れて</b>撮る</p>
+<h4>🎨 色の学習 — 4 ステップ</h4>
+<ol>
+<li>色のついた物を画面の<b>真ん中の四角いっぱい</b>に入れます。</li>
+<li><b>真ん中の色を学習</b>を押して名前をつけます（例：<i>蛍光グリーン</i>）。</li>
+<li><b>許容範囲</b>を調整。広すぎると似た色まで、せますぎると影の部分を見のがします。</li>
+<li>ブロックの色リストに <b>★ 蛍光グリーン</b> が出ます。<code>[★ 蛍光グリーン] 色の x</code> でボールを追うロボットを作ろう。</li>
+</ol>
+<p class="tip">💡 白・黒・灰色は色味がないので学習しにくいです。鮮やかな色ほどよく見つかります。明るさが変わったら学習し直しましょう。</p>
+<h4>🤖 作品アイデア</h4>
+<ul>
+<li><b>仕分けロボット</b>：<code>学習した物が [赤いコップ] になったとき</code> → モーター時計回り 1 秒、<code>[青いボール]</code> なら反時計回り</li>
+<li><b>色追いかけ</b>：ずっと — <code>[★ わたしの色] 色の x</code> が 40 より小さければ左、60 より大きければ右へ</li>
+<li><b>確信度メーター</b>：<code>モーターのパワーを [[物 1] の確信度] % にする</code></li>
+</ul>
+<p class="muted">学習内容はプロジェクトと一緒に保存されます。PC の Python で動かすときは <b>Python 用学習ファイルを保存</b> したファイルを .py の横に置いてください。</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 AI 是怎样学习的？</h4>
+<p>AI 会把每张照片变成 <b>1,024 个数字（特征）</b>。训练就是告诉它很多例子：“这些数字是<b>杯子</b>”。来了新照片，AI 会找出<b>最相似的 7 张训练照片</b>，按多数回答（最近邻方法）。给出<b>越多好例子</b>，它就越聪明。</p>
+<h4>📦 物体学习 — 5 步</h4>
+<ol>
+<li><b>决定要区分什么</b> — 例：<i>红杯子 / 蓝球 / 背景</i>。一定要保留<b>背景（什么都没有）</b>类别。</li>
+<li><b>收集照片</b> — 每个类别按住<b>按住拍摄</b>收集 30~50 张。<b>转动</b>物体，<b>远近、左右</b>移动着拍。</li>
+<li><b>开始训练</b> — 按下按钮立即完成训练。</li>
+<li><b>测试</b> — 展示物体并查看置信度条。答错时，<b>多拍几张那种情况的照片再训练</b>。</li>
+<li><b>用积木</b> — 把 <code>学习的物体是 [红杯子]？</code> 放进 <code>当 ○</code> 或 <code>如果</code> 来控制机器人。</li>
+</ol>
+<p class="tip">💡 <b>技巧</b>：各类别照片数量相近 · 在实际使用的地点和光线下训练 · 背景尽量简单 · 手入镜时 AI 可能学成“手”，所以<b>背景类别里也要拍到手</b></p>
+<h4>🎨 颜色学习 — 4 步</h4>
+<ol>
+<li>把彩色物体<b>填满画面中间的方框</b>。</li>
+<li>按<b>学习中间的颜色</b>并命名（例：<i>荧光绿</i>）。</li>
+<li>调整<b>容差</b>：太大会抓到相近颜色，太小会漏掉阴影部分。</li>
+<li>积木的颜色列表里会出现 <b>★ 荧光绿</b>。试试用 <code>[★ 荧光绿] 色的 x</code> 做追球机器人。</li>
+</ol>
+<p class="tip">💡 白、黑、灰没有色相，很难学习。越鲜艳越好找；光线变化后请重新学习。</p>
+<h4>🤖 作品创意</h4>
+<ul>
+<li><b>分拣机器人</b>：<code>当 学习的物体是 [红杯子]</code> → 马达顺时针 1 秒，<code>[蓝球]</code> 则逆时针</li>
+<li><b>颜色跟随</b>：重复执行 — <code>[★ 我的颜色] 色的 x</code> 小于 40 向左，大于 60 向右</li>
+<li><b>置信度仪表</b>：<code>将马达功率设为 [[物体 1] 置信度] %</code></li>
+</ul>
+<p class="muted">训练内容会和项目一起保存。要在电脑上用 Python 运行，请把<b>保存 Python 用训练文件</b>得到的文件放在 .py 文件旁边。</p>
+</div>`,
+`<div class="guide">
+<h4>🧠 ¿Cómo aprende la IA?</h4>
+<p>La IA convierte cada foto en <b>1.024 números (características)</b>. Enseñar es darle muchos ejemplos: «estos números son una <b>taza</b>». Ante una foto nueva busca las <b>7 fotos de entrenamiento más parecidas</b> y responde con la clase mayoritaria (método del vecino más cercano). <b>Más buenos ejemplos</b> la hacen más lista.</p>
+<h4>📦 Aprender objetos — 5 pasos</h4>
+<ol>
+<li><b>Decide qué distinguir</b> — p. ej. <i>taza roja / pelota azul / fondo</i>. Ten siempre una clase <b>Fondo (nada)</b>.</li>
+<li><b>Reúne fotos</b> — en cada clase mantén <b>Mantén para grabar</b> y junta 30–50 fotos. <b>Gira</b> el objeto y muévelo <b>cerca/lejos e izquierda/derecha</b>.</li>
+<li><b>Entrena</b> — pulsa el botón; es instantáneo.</li>
+<li><b>Prueba</b> — enseña el objeto y mira las barras de confianza. Si falla, <b>graba más fotos</b> de esa situación y vuelve a entrenar.</li>
+<li><b>Usa bloques</b> — pon <code>¿objeto aprendido es [taza roja]?</code> en <code>cuando ○</code> o <code>si</code> para mover el robot.</li>
+</ol>
+<p class="tip">💡 <b>Consejos</b>: número de fotos parecido en cada clase · entrena en el lugar y la luz donde lo usarás · fondo sencillo · si sale tu mano la IA puede aprender «mano», así que <b>graba también tu mano en la clase Fondo</b></p>
+<h4>🎨 Aprender colores — 4 pasos</h4>
+<ol>
+<li>Pon un objeto de color de modo que <b>llene el cuadro central</b>.</li>
+<li>Pulsa <b>Aprender el color central</b> y ponle nombre (p. ej. <i>verde neón</i>).</li>
+<li>Ajusta la <b>tolerancia</b>: muy amplia capta colores parecidos; muy estrecha pierde las sombras.</li>
+<li><b>★ verde neón</b> aparece en las listas de color. Prueba <code>x del color [★ verde neón]</code> para un robot que sigue una pelota.</li>
+</ol>
+<p class="tip">💡 Blanco, negro y gris no tienen tono y cuesta aprenderlos. Los colores vivos funcionan mejor; vuelve a enseñar si cambia la luz.</p>
+<h4>🤖 Ideas de proyectos</h4>
+<ul>
+<li><b>Robot clasificador</b>: <code>cuando ¿objeto aprendido es [taza roja]?</code> → motor horario 1 s; <code>[pelota azul]</code> → antihorario</li>
+<li><b>Seguidor de color</b>: por siempre — si <code>x del color [★ mi color]</code> &lt; 40 gira a la izquierda, &gt; 60 a la derecha</li>
+<li><b>Medidor de confianza</b>: <code>fijar potencia en [confianza de [Objeto 1]] %</code></li>
+</ul>
+<p class="muted">Lo aprendido se guarda con el proyecto. Para Python en un PC, pon el archivo de <b>Guardar archivo para Python</b> junto a tu .py.</p>
+</div>`],
     funcs: ['사용할 수 있는 함수', 'Available functions', '使える関数', '可用函数', 'Funciones disponibles']
   };
 
@@ -5305,7 +5597,7 @@ return Blockly.Msg;
   // 글씨가 잘 보이도록: 흰 글씨 블록은 대비 4.5:1 이상, 밝은 블록(이벤트·제어)은 진한 글씨
   const C = {
     event: '#f2b705', motor: '#1f6fd1', light: '#7a4cc8', sound: '#b03aa8',
-    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a', cam: '#0f766e'
+    sensor: '#0b7fa3', control: '#f08c00', op: '#2b8a3e', variable: '#c8510d', out: '#56657a', cam: '#0f766e', learn: '#6d28d9'
   };
   window.WEDO_COLORS = C;
 
@@ -5325,10 +5617,33 @@ return Blockly.Msg;
     wedo_cam_person: 'pose', wedo_cam_arm_up: 'pose', wedo_cam_body_pos: 'pose', wedo_cam_elbow: 'pose', wedo_cam_tilt: 'pose',
     wedo_cam_hand_seen: 'hand', wedo_cam_gesture: 'hand', wedo_cam_fingers: 'hand', wedo_cam_hand_pos: 'hand',
     wedo_cam_object_seen: 'object', wedo_cam_object_pos: 'object', wedo_cam_object_count: 'object',
-    wedo_cam_color_seen: 'color', wedo_cam_color_pos: 'color'
+    wedo_cam_color_seen: 'color', wedo_cam_color_pos: 'color',
+    wedo_cam_learned_is: 'learn', wedo_cam_learned_name: 'learn', wedo_cam_learned_conf: 'learn'
   };
   window.WEDO_CAM = { CAM_MODE, OBJECTS, GESTURES };
   window.WEDO_HATS = HATS;
+
+  // 학생이 학습시킨 클래스·색이 목록에 바로 나타나는 드롭다운
+  window.WEDO_LEARN = window.WEDO_LEARN || { classes: () => [], colors: () => [], className: (id) => id, colorName: (id) => id };
+  class FieldDyn extends Blockly.FieldDropdown {
+    static fromJson(o) { return new FieldDyn(DYN[o.source]); }
+    doClassValidation_(v) { return v; } // 학습 데이터가 나중에 불러와져도 값을 지키도록
+  }
+  const DYN = {
+    classes: function () {
+      const list = window.WEDO_LEARN.classes().map((c) => [c.name, c.id]);
+      const cur = this && this.getValue && this.getValue();
+      if (cur && !list.some((x) => x[1] === cur)) list.push([window.WEDO_LEARN.className(cur) || '?', cur]);
+      return list.length ? list : [[t('learn_none'), '']];
+    },
+    colors: function () {
+      const list = CAM_COLORS.map((c) => [t('cc_' + c), c]).concat(window.WEDO_LEARN.colors().map((c) => ['★ ' + c.name, 'u:' + c.id]));
+      const cur = this && this.getValue && this.getValue();
+      if (cur && !list.some((x) => x[1] === cur)) list.push(['★ ' + (window.WEDO_LEARN.colorName(cur) || '?'), cur]);
+      return list;
+    }
+  };
+  if (!Blockly.registry.hasItem(Blockly.registry.Type.FIELD, 'field_dyn')) Blockly.fieldRegistry.register('field_dyn', FieldDyn);
 
   // 언어가 바뀔 때마다 다시 정의 (블록 문장·선택지만 바뀌고, 저장 값은 그대로)
   function defineBlocks() {
@@ -5401,8 +5716,12 @@ return Blockly.Msg;
       { type: 'wedo_cam_object_pos', message0: t('b_cam_object_pos'), args0: [DD('OBJ', OBJS), DD('AXIS', XY)], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
       { type: 'wedo_cam_object_count', message0: t('b_cam_object_count'), args0: [DD('OBJ', OBJS)], output: 'Number', colour: C.cam },
       // 색깔
-      { type: 'wedo_cam_color_seen', message0: t('b_cam_color_seen'), args0: [DD('COLOR', CCOL)], output: 'Boolean', colour: C.cam },
-      { type: 'wedo_cam_color_pos', message0: t('b_cam_color_pos'), args0: [DD('COLOR', CCOL), DD('AXIS', XY.concat([[t('o_size'), 'size']]))], output: 'Number', colour: C.cam, tooltip: t('tt_xy') }
+      { type: 'wedo_cam_color_seen', message0: t('b_cam_color_seen'), args0: [{ type: 'field_dyn', name: 'COLOR', source: 'colors' }], output: 'Boolean', colour: C.cam, tooltip: t('tt_learned_color') },
+      { type: 'wedo_cam_color_pos', message0: t('b_cam_color_pos'), args0: [{ type: 'field_dyn', name: 'COLOR', source: 'colors' }, DD('AXIS', XY.concat([[t('o_size'), 'size']]))], output: 'Number', colour: C.cam, tooltip: t('tt_xy') },
+      // 학습한 사물
+      { type: 'wedo_cam_learned_is', message0: t('b_cam_learned_is'), args0: [{ type: 'field_dyn', name: 'CLS', source: 'classes' }], output: 'Boolean', colour: C.learn, tooltip: t('tt_learned') },
+      { type: 'wedo_cam_learned_name', message0: t('b_cam_learned_name'), output: 'String', colour: C.learn, tooltip: t('tt_learned') },
+      { type: 'wedo_cam_learned_conf', message0: t('b_cam_learned_conf'), args0: [{ type: 'field_dyn', name: 'CLS', source: 'classes' }], output: 'Number', colour: C.learn, tooltip: t('tt_conf') }
     ]);
     HATS.forEach((type) => {
       const def = Blockly.Blocks[type];
@@ -5479,6 +5798,9 @@ return Blockly.Msg;
   J.wedo_cam_object_count = (b) => [`W.cam.objectCount(${q(b.getFieldValue('OBJ'))})`, F];
   J.wedo_cam_color_seen = (b) => [`W.cam.colorSeen(${q(b.getFieldValue('COLOR'))})`, F];
   J.wedo_cam_color_pos = (b) => [`W.cam.colorPos(${q(b.getFieldValue('COLOR'))}, ${q(b.getFieldValue('AXIS'))})`, F];
+  J.wedo_cam_learned_is = (b) => [`W.cam.learnedIs(${q(b.getFieldValue('CLS'))})`, F];
+  J.wedo_cam_learned_name = () => ['W.cam.learnedName()', F];
+  J.wedo_cam_learned_conf = (b) => [`W.cam.learnedConf(${q(b.getFieldValue('CLS'))})`, F];
   J.wedo_motor_on_for = (b, G) => `await W.motorOnFor(${b.getFieldValue('PORT')}, ${v(G, JO.NONE, b, 'SECS', '1')});\n`;
   J.wedo_motor_on = (b) => `await W.motorOn(${b.getFieldValue('PORT')});\n`;
   J.wedo_motor_off = (b) => `await W.motorOff(${b.getFieldValue('PORT')});\n`;
@@ -5511,7 +5833,7 @@ return Blockly.Msg;
     'motor_direction,motor_reverse,light_color,light_rgb,light_off,play_tone,stop_sound,distance,is_tilted,' +
     'tilt_angle,is_button_pressed,timer,reset_timer,wait,wait_until,stop_all,ALL,UP,DOWN,LEFT,RIGHT,ANY,' +
     'CLOCKWISE,COUNTERCLOCKWISE,BOTH,is_person_seen,is_arm_up,body_x,body_y,elbow_angle,shoulder_tilt,is_hand_seen,is_gesture,finger_count,hand_x,hand_y,' +
-    'is_object_seen,object_x,object_y,object_count,is_color_seen,color_x,color_y,color_size,' + COLOR_KEYS.join(','));
+    'is_object_seen,object_x,object_y,object_count,is_color_seen,color_x,color_y,color_size,is_learned,learned_name,learned_confidence,load_learning,learn_color,' + COLOR_KEYS.join(','));
   let hatSeq = 0;
   const pyGlobals = (b, G) => {
     const names = b.workspace.getAllVariables().map((x) => G.nameDB_.getName(x.getId(), Blockly.Names.NameType.VARIABLE));
@@ -5552,8 +5874,14 @@ return Blockly.Msg;
   P.wedo_cam_object_seen = (b) => [`is_object_seen(${pq(b.getFieldValue('OBJ'))})`, PF];
   P.wedo_cam_object_pos = (b) => [`object_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('OBJ'))})`, PF];
   P.wedo_cam_object_count = (b) => [`object_count(${pq(b.getFieldValue('OBJ'))})`, PF];
-  P.wedo_cam_color_seen = (b) => [`is_color_seen(${pq(b.getFieldValue('COLOR'))})`, PF];
-  P.wedo_cam_color_pos = (b) => [`color_${b.getFieldValue('AXIS')}(${pq(b.getFieldValue('COLOR'))})`, PF];
+  // 학습한 색·사물은 Python 에서 이름으로 쓴다 (따옴표·역슬래시는 안전하게)
+  const pyStr = (x) => `'${String(x).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  const pyColor = (v) => pyStr(String(v).startsWith('u:') ? window.WEDO_LEARN.colorName(v) : v);
+  P.wedo_cam_color_seen = (b) => [`is_color_seen(${pyColor(b.getFieldValue('COLOR'))})`, PF];
+  P.wedo_cam_color_pos = (b) => [`color_${b.getFieldValue('AXIS')}(${pyColor(b.getFieldValue('COLOR'))})`, PF];
+  P.wedo_cam_learned_is = (b) => [`is_learned(${pyStr(window.WEDO_LEARN.className(b.getFieldValue('CLS')))})`, PF];
+  P.wedo_cam_learned_name = () => ['learned_name()', PF];
+  P.wedo_cam_learned_conf = (b) => [`learned_confidence(${pyStr(window.WEDO_LEARN.className(b.getFieldValue('CLS')))})`, PF];
   const pp = (p) => (p === '0' ? 'ALL' : p);
   P.wedo_motor_on_for = (b, G) => `motor_on_for(${pp(b.getFieldValue('PORT'))}, ${v(G, PO.NONE, b, 'SECS', '1')})\n`;
   P.wedo_motor_on = (b) => `motor_on(${pp(b.getFieldValue('PORT'))})\n`;
@@ -5957,8 +6285,29 @@ return Blockly.Msg;
   const MODELS = {
     pose: ['./models/pose_landmarker_lite.task', 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task'],
     hand: ['./models/gesture_recognizer.task', 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'],
-    object: ['./models/efficientdet_lite0.tflite', 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite']
+    object: ['./models/efficientdet_lite0.tflite', 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite'],
+    learn: ['./models/mobilenet_v3_small.tflite', 'https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite']
   };
+  const KNN_K = 7, MAX_SAMPLES = 120, CONF_MIN = 60;
+  // 특징 벡터 ↔ 문자열 (int8 로 줄여 저장: 프로젝트 파일·Python 과 같은 형식)
+  function encodeVec(v) {
+    const b = new Int8Array(v.length);
+    for (let i = 0; i < v.length; i++) b[i] = Math.max(-127, Math.min(127, Math.round(v[i] * 127)));
+    let str = ''; const u = new Uint8Array(b.buffer);
+    for (let i = 0; i < u.length; i++) str += String.fromCharCode(u[i]);
+    return btoa(str);
+  }
+  function decodeVec(b64) {
+    const str = atob(b64), b = new Int8Array(str.length);
+    for (let i = 0; i < str.length; i++) b[i] = (str.charCodeAt(i) << 24) >> 24;
+    const v = new Float32Array(b.length); let n = 0;
+    for (let i = 0; i < b.length; i++) { v[i] = b[i] / 127; n += v[i] * v[i]; }
+    n = Math.sqrt(n) || 1; for (let i = 0; i < v.length; i++) v[i] /= n;
+    return v;
+  }
+  const hueDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  let uid = Date.now() % 100000;
+  const newId = (p) => p + (++uid).toString(36);
   // MediaPipe 포즈 랜드마크 번호
   const BODY = {
     NOSE: 0, LEFT_SHOULDER: 11, RIGHT_SHOULDER: 12, LEFT_ELBOW: 13, RIGHT_ELBOW: 14,
@@ -5996,7 +6345,14 @@ return Blockly.Msg;
       this.video = document.createElement('video');
       this.video.playsInline = true; this.video.muted = true;
       this.stream = null; this.running = false;
-      this.want = { pose: false, hand: false, object: false, color: false };
+      this.want = { pose: false, hand: false, object: false, color: false, learn: false };
+      // 학습: 사물(클래스별 특징 벡터) · 색(HSV 범위)
+      this.classes = []; // { id, name, samples: [Float32Array], thumbs: [dataURL] }
+      this.learnedColors = []; // { id, name, h, hr, smin, vmin, rgb }
+      this.model = null; // 학습된 모델 { ids, vecs }
+      this.pred = null; // { top, conf, scores: { id: % } }
+      this.lastEmb = null;
+      this._thumb = document.createElement('canvas'); this._thumb.width = 64; this._thumb.height = 48;
       this.tasks = {}; this.loading = {}; this.errors = {};
       this.vision = null; this.fileset = null;
       this.pose = null; // 33개 랜드마크 (정규화 좌표)
@@ -6062,6 +6418,7 @@ return Blockly.Msg;
             const base = { modelAssetBuffer: buf, delegate };
             if (mode === 'pose') return v.PoseLandmarker.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', numPoses: 1 });
             if (mode === 'hand') return v.GestureRecognizer.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', numHands: 1 });
+            if (mode === 'learn') return v.ImageEmbedder.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', l2Normalize: true, quantize: false });
             return v.ObjectDetector.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', scoreThreshold: 0.4, maxResults: 8 });
           };
           try { this.tasks[mode] = await make('GPU'); } catch (e) { this.tasks[mode] = await make('CPU'); }
@@ -6094,13 +6451,18 @@ return Blockly.Msg;
         const ts = Math.max(this._lastTs + 1, Math.round(now));
         this._lastTs = ts;
         // 무거운 모델은 번갈아 돌려 화면이 끊기지 않게 한다
-        const heavy = ['pose', 'hand', 'object'].filter((m) => this.want[m] && this.tasks[m]);
+        const heavy = ['pose', 'hand', 'object', 'learn'].filter((m) => this.want[m] && this.tasks[m]);
         const pick = heavy.length ? heavy[this._turn++ % heavy.length] : null;
         try {
           if (pick === 'pose') { const r = this.tasks.pose.detectForVideo(v, ts); this.pose = r.landmarks && r.landmarks[0] ? r.landmarks[0] : null; }
           if (pick === 'hand') {
             const r = this.tasks.hand.recognizeForVideo(v, ts);
             this.hand = r.landmarks && r.landmarks[0] ? { lm: r.landmarks[0], gesture: (r.gestures && r.gestures[0] && r.gestures[0][0] && r.gestures[0][0].categoryName) || 'None' } : null;
+          }
+          if (pick === 'learn') {
+            const r = this.tasks.learn.embedForVideo(v, ts);
+            const e = r.embeddings && r.embeddings[0] && r.embeddings[0].floatEmbedding;
+            if (e) { this.lastEmb = Float32Array.from(e); this.embSeq = (this.embSeq || 0) + 1; this.pred = this._predict(this.lastEmb); this.dispatchEvent(new Event('embed')); }
           }
           if (pick === 'object') {
             const r = this.tasks.object.detectForVideo(v, ts);
@@ -6115,7 +6477,8 @@ return Blockly.Msg;
         if (!this.want.pose) this.pose = null;
         if (!this.want.hand) this.hand = null;
         if (!this.want.object) this.objects = [];
-        if (this.want.color) this._colors(); else this.colors = {};
+        if (!this.want.learn) this.pred = null;
+        if (this.want.color || this.learnedColors.length) this._colors(); else this.colors = {};
         this._draw();
         this._frames++;
         if (now - this._fpsT > 1000) { this.fps = this._frames; this._frames = 0; this._fpsT = now; this._emit(); }
@@ -6128,7 +6491,9 @@ return Blockly.Msg;
       const c = this._wctx, W = 80, H = 60;
       c.save(); c.scale(-1, 1); c.drawImage(this.video, -W, 0, W, H); c.restore(); // 거울
       const px = c.getImageData(0, 0, W, H).data;
-      const acc = {}; Object.keys(COLOR_RULES).forEach((k) => (acc[k] = { n: 0, sx: 0, sy: 0 }));
+      const rules = Object.assign({}, COLOR_RULES);
+      this.learnedColors.forEach((c) => { rules['u:' + c.id] = (h, s, v) => hueDist(h, c.h) <= c.hr && s >= c.smin && v >= c.vmin; });
+      const acc = {}; Object.keys(rules).forEach((k) => (acc[k] = { n: 0, sx: 0, sy: 0 }));
       for (let i = 0, p = 0; i < px.length; i += 4, p++) {
         const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
         const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
@@ -6136,7 +6501,7 @@ return Blockly.Msg;
         let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
         h = (h * 60 + 360) % 360;
         const s = d / mx;
-        for (const k in COLOR_RULES) if (COLOR_RULES[k](h, s, mx)) { const a = acc[k]; a.n++; a.sx += p % W; a.sy += (p / W) | 0; }
+        for (const k in rules) if (rules[k](h, s, mx)) { const a = acc[k]; a.n++; a.sx += p % W; a.sy += (p / W) | 0; }
       }
       const out = {};
       for (const k in acc) {
@@ -6168,6 +6533,15 @@ return Blockly.Msg;
         this.hand.lm.forEach((L) => { const [x, y] = P(L); ctx.beginPath(); ctx.arc(x, y, Math.max(2, W / 140), 0, 7); ctx.fill(); });
       }
       ctx.font = `700 ${Math.max(11, W / 28)}px sans-serif`;
+      if (this.pred && this.pred.top) {
+        const c = this.classes.find((q) => q.id === this.pred.top);
+        if (c) {
+          const label = `🧠 ${c.name} ${this.pred.conf}%`;
+          const tw = ctx.measureText(label).width + 14;
+          ctx.fillStyle = this.pred.conf >= CONF_MIN ? 'rgba(124,58,237,.88)' : 'rgba(60,60,70,.7)';
+          ctx.fillRect(8, H - 34, tw, 26); ctx.fillStyle = '#fff'; ctx.fillText(label, 15, H - 15);
+        }
+      }
       this.objects.forEach((o) => {
         ctx.strokeStyle = '#30d158'; ctx.lineWidth = 2;
         ctx.strokeRect(o.bx * W, o.by * H, o.w * W, o.h * H);
@@ -6179,7 +6553,8 @@ return Blockly.Msg;
       Object.entries(this.colors).forEach(([k, c]) => {
         if (!c.seen) return;
         const x = c.x / 100 * W, y = (1 - c.y / 100) * H;
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.fillStyle = COLOR_DRAW[k];
+        const lc = k.startsWith('u:') && this.learnedColors.find((q) => 'u:' + q.id === k);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.fillStyle = lc ? lc.rgb : COLOR_DRAW[k];
         ctx.beginPath(); ctx.arc(x, y, Math.max(6, W / 30), 0, 7); ctx.fill(); ctx.stroke();
       });
     }
@@ -6232,6 +6607,107 @@ return Blockly.Msg;
     colorSeen(c) { return !!(this.colors[c] && this.colors[c].seen); }
     colorPos(c, axis) { const v = this.colors[c]; if (!v) return axis === 'size' ? 0 : -1; return v[axis]; }
 
+    /* --- 사물 학습 (특징 벡터 + 최근접 이웃) --- */
+    addClass(name) { const c = { id: newId('k'), name, samples: [], thumbs: [] }; this.classes.push(c); this._changed(); return c; }
+    renameClass(id, name) { const c = this.classes.find((q) => q.id === id); if (c) { c.name = name; this._changed(); } }
+    removeClass(id) { this.classes = this.classes.filter((q) => q.id !== id); this.model = null; this._changed(); }
+    clearSamples(id) { const c = this.classes.find((q) => q.id === id); if (c) { c.samples = []; c.thumbs = []; this.model = null; this._changed(); } }
+    addSample(id) {
+      const c = this.classes.find((q) => q.id === id);
+      if (!c || !this.lastEmb || c.samples.length >= MAX_SAMPLES) return false;
+      c.samples.push(this.lastEmb);
+      if (c.thumbs.length < 8 || c.samples.length % 6 === 0) {
+        const tc = this._thumb.getContext('2d');
+        tc.save(); tc.scale(-1, 1); tc.drawImage(this.video, -64, 0, 64, 48); tc.restore();
+        const url = this._thumb.toDataURL('image/jpeg', 0.6);
+        if (c.thumbs.length >= 8) c.thumbs.shift();
+        c.thumbs.push(url);
+      }
+      this.model = null; this._changed('samples');
+      return true;
+    }
+    canTrain() { return this.classes.filter((c) => c.samples.length >= 3).length >= 2; }
+    train() {
+      const ids = [], vecs = [];
+      this.classes.forEach((c) => { if (c.samples.length >= 3) c.samples.forEach((v) => { ids.push(c.id); vecs.push(v); }); });
+      this.model = ids.length ? { ids, vecs, at: Date.now() } : null;
+      this._changed();
+      return this.model;
+    }
+    _predict(e) {
+      const m = this.model; if (!m) return null;
+      const sims = m.vecs.map((v, i) => { let d = 0; for (let j = 0; j < v.length; j++) d += v[j] * e[j]; return [d, m.ids[i]]; });
+      sims.sort((a, b) => b[0] - a[0]);
+      const k = Math.min(KNN_K, sims.length), votes = {}, sum = {};
+      for (let i = 0; i < k; i++) { const [d, id] = sims[i]; votes[id] = (votes[id] || 0) + 1; sum[id] = (sum[id] || 0) + d; }
+      const scores = {};
+      this.classes.forEach((c) => { scores[c.id] = Math.round((votes[c.id] || 0) / k * 100); });
+      let top = null;
+      Object.keys(votes).forEach((id) => { if (!top || votes[id] > votes[top] || (votes[id] === votes[top] && sum[id] > sum[top])) top = id; });
+      return { top, conf: top ? scores[top] : 0, scores };
+    }
+    learnedIs(id) { return !!(this.pred && this.pred.top === id && this.pred.conf >= CONF_MIN); }
+    learnedName() {
+      if (!this.pred || this.pred.conf < CONF_MIN) return '';
+      const c = this.classes.find((q) => q.id === this.pred.top); return c ? c.name : '';
+    }
+    learnedConf(id) { return this.pred && this.pred.scores[id] !== undefined ? this.pred.scores[id] : 0; }
+
+    /* --- 색 학습: 화면 가운데 네모의 색을 잰다 --- */
+    sampleCenterColor() {
+      if (!this.on) return null;
+      const c = this._wctx, W = 80, H = 60;
+      c.save(); c.scale(-1, 1); c.drawImage(this.video, -W, 0, W, H); c.restore();
+      const px = c.getImageData(W * 0.4, H * 0.375, W * 0.2, H * 0.25).data;
+      let sx = 0, sy = 0, n = 0; const ss = [], vs = []; let rr = 0, gg = 0, bb = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        rr += px[i]; gg += px[i + 1]; bb += px[i + 2];
+        if (d < 0.05) continue;
+        let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h = (h * 60 + 360) % 360;
+        sx += Math.cos(h * Math.PI / 180); sy += Math.sin(h * Math.PI / 180); n++;
+        ss.push(d / mx); vs.push(mx);
+      }
+      const cnt = px.length / 4;
+      const rgb = `rgb(${Math.round(rr / cnt)},${Math.round(gg / cnt)},${Math.round(bb / cnt)})`;
+      if (n < cnt * 0.5) return { ok: false, rgb };
+      ss.sort((a, b) => a - b); vs.sort((a, b) => a - b);
+      const med = (a) => a[a.length >> 1];
+      const s = med(ss), v = med(vs);
+      if (s < 0.2) return { ok: false, rgb, s, v };
+      const h = Math.round((Math.atan2(sy, sx) * 180 / Math.PI + 360) % 360);
+      return { ok: true, h, s: r1(s), v: r1(v), rgb, hr: 14, smin: Math.round(Math.max(0.2, s * 0.55) * 100) / 100, vmin: Math.round(Math.max(0.15, v * 0.45) * 100) / 100 };
+    }
+    addColor(name, sample) {
+      const c = { id: newId('c'), name, h: sample.h, hr: sample.hr, smin: sample.smin, vmin: sample.vmin, rgb: sample.rgb };
+      this.learnedColors.push(c); this._changed(); return c;
+    }
+    updateColor(id, patch) { const c = this.learnedColors.find((q) => q.id === id); if (c) { Object.assign(c, patch); this._changed(); } }
+    removeColor(id) { this.learnedColors = this.learnedColors.filter((q) => q.id !== id); this._changed(); }
+
+    /* --- 저장 형식 (프로젝트 파일 · Python 학습 파일 공용) --- */
+    exportLearning() {
+      return {
+        format: 'wedomakers-learning', version: 1, model: 'mobilenet_v3_small',
+        trained: !!this.model,
+        classes: this.classes.map((c) => ({ id: c.id, name: c.name, samples: c.samples.map(encodeVec), thumbs: c.thumbs })),
+        colors: this.learnedColors.map((c) => Object.assign({}, c))
+      };
+    }
+    importLearning(o) {
+      this.classes = []; this.learnedColors = []; this.model = null; this.pred = null;
+      if (o && o.format === 'wedomakers-learning') {
+        this.classes = (o.classes || []).map((c) => ({ id: c.id || newId('k'), name: c.name, samples: (c.samples || []).map(decodeVec), thumbs: c.thumbs || [] }));
+        this.learnedColors = (o.colors || []).map((c) => Object.assign({}, c));
+        if (o.trained) this.train();
+      }
+      this._changed();
+    }
+    hasLearning() { return this.classes.length > 0 || this.learnedColors.length > 0; }
+    _changed(kind) { this.dispatchEvent(new CustomEvent('learning', { detail: kind || '' })); }
+
     summary() {
       return {
         person: this.want.pose ? this.personSeen() : null,
@@ -6243,7 +6719,7 @@ return Blockly.Msg;
     }
   }
 
-  window.WeCam = { Camera, BODY };
+  window.WeCam = { Camera, BODY, CONF_MIN };
 })();
 </script>
 <script>/* ===== 위두 메이커스 — 앱 UI ===== */
@@ -6251,7 +6727,7 @@ return Blockly.Msg;
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.3.0';
+  const VERSION = '1.4.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -6357,6 +6833,10 @@ return Blockly.Msg;
           B('wedo_cam_object_seen', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_pos', null, { fields: { OBJ: 'cup' } }), B('wedo_cam_object_count', null, { fields: { OBJ: 'person' } }),
           { kind: 'label', text: '🎨 ' + t('cam_m_color') },
           B('wedo_cam_color_seen'), B('wedo_cam_color_pos'),
+          { kind: 'label', text: '🧠 ' + t('cam_m_learn') },
+          { kind: 'button', text: t('learn_btn'), callbackkey: 'WEDO_LEARN' },
+          B('wedo_cam_learned_is'), B('wedo_cam_learned_name'), B('wedo_cam_learned_conf'),
+          B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_learned_is' } } }),
           { kind: 'sep', gap: 20 },
           B('wedo_motor_power', { POWER: { block: { type: 'wedo_cam_hand_pos', fields: { AXIS: 'y' } } } }, { fields: { PORT: '1' } }),
           B('wedo_when_cond', { COND: { block: { type: 'wedo_cam_gesture', fields: { G: 'Closed_Fist' } } } })] },
@@ -6392,6 +6872,7 @@ return Blockly.Msg;
     });
     ws.addChangeListener(Blockly.Events.disableOrphans);
     // 변수 분류: 숫자를 바로 넣을 수 있게
+    ws.registerButtonCallback('WEDO_LEARN', () => { ensureDefaultClasses(); openLearn('obj'); });
     ws.registerButtonCallback('WEDO_CREATE_VAR', (btn) => Blockly.Variables.createVariableButtonHandler(btn.getTargetWorkspace(), null, ''));
     ws.registerToolboxCategoryCallback('WEDO_VARIABLE', (w) => {
       const items = [{ kind: 'button', text: t('var_create'), callbackkey: 'WEDO_CREATE_VAR' }];
@@ -6443,6 +6924,7 @@ return Blockly.Msg;
 
   /* ---------- 저장/불러오기 ---------- */
   function loadProject(obj, name) {
+    cam.importLearning(obj.learning || null); // 학습 내용을 먼저 (블록 목록이 학습한 이름을 쓰므로)
     createWorkspace(obj.workspace || obj);
     if (name || obj.name) $('#projName').value = name || obj.name;
     setTimeout(() => $('#zFit').onclick(), 30);
@@ -6450,7 +6932,9 @@ return Blockly.Msg;
     return true;
   }
   function currentProject() {
-    return { app: 'wedomakers', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
+    const p = { app: 'wedomakers', version: 1, name: $('#projName').value, workspace: Blockly.serialization.workspaces.save(ws) };
+    if (cam.hasLearning()) p.learning = cam.exportLearning();
+    return p;
   }
   function autosave() { try { localStorage.setItem(STORE_KEY, JSON.stringify(currentProject())); } catch (e) { /* 저장소 없음 */ } }
 
@@ -6531,10 +7015,21 @@ return Blockly.Msg;
     window.WEDO_GEN.resetSeq();
     let body = python.pythonGenerator.workspaceToCode(ws).replace(/\n{3,}/g, '\n\n').trim();
     const name = $('#projName').value.replace(/\n/g, ' ');
-    const head = `# ${name}\n# ${t('py_head1')}\n# ${t('py_head2')}\n\nfrom wedo2 import *\n`;
+    let head = `# ${name}\n# ${t('py_head1')}\n# ${t('py_head2')}\n\nfrom wedo2 import *\n`;
+    // 학습한 사물·색을 쓰면 Python 에서도 같은 학습 내용을 불러온다
+    const used = ws.getAllBlocks(false).filter((b) => b.isEnabled());
+    const usesLearned = used.some((b) => /^wedo_cam_learned_/.test(b.type));
+    const colorIds = new Set(used.map((b) => (b.getField('COLOR') && b.type.startsWith('wedo_cam_color') ? b.getFieldValue('COLOR') : '')).filter((v) => v.startsWith('u:')));
+    const extra = [];
+    if (usesLearned && cam.classes.length) extra.push(`load_learning('${learnFileName()}')`);
+    cam.learnedColors.filter((c) => colorIds.has('u:' + c.id)).forEach((c) => {
+      extra.push(`learn_color(${JSON.stringify(c.name)}, hue=${c.h}, hue_range=${c.hr}, min_s=${c.smin}, min_v=${c.vmin})`);
+    });
+    if (extra.length) head += '\n' + extra.join('\n') + '\n';
     if (!body) body = '# ' + t('py_empty');
     return `${head}\n${body}\n\nrun()\n`;
   }
+  function learnFileName() { return safeName($('#projName').value).replace(/\s+/g, '_') + '_learning.json'; }
   function genJS() {
     const G = javascript.javascriptGenerator;
     G.STATEMENT_PREFIX = 'W.hl(%1, __t);\n';
@@ -6600,7 +7095,8 @@ is_color_seen('red') / color_x('red') / color_size('red')
       `Bluetooth: ${'bluetooth' in navigator ? 'yes' : 'no'} · secure: ${window.isSecureContext}`,
       `Hub: ${hub.connected ? hub.state.name + ' · ports ' + JSON.stringify(hub.state.ports) + ' · battery ' + hub.state.battery : 'not connected'}`,
       `Page: ${location.href.split('#')[0]}`,
-      `Camera: ${cam.on ? 'on' : 'off'} · ${['pose', 'hand', 'object', 'color'].map((m) => m + '=' + cam.status(m) + (cam.errors[m] ? '(' + cam.errors[m] + ')' : '')).join(' ')}`,
+      `Learning: ${cam.classes.map((c) => c.name + '=' + c.samples.length).join(', ') || '-'} · colors ${cam.learnedColors.length} · trained ${!!cam.model}`,
+      `Camera: ${cam.on ? 'on' : 'off'} · ${['pose', 'hand', 'object', 'color', 'learn'].map((m) => m + '=' + cam.status(m) + (cam.errors[m] ? '(' + cam.errors[m] + ')' : '')).join(' ')}`,
       '', '--- console ---', ...lines
     ].join('\n');
   }
@@ -6696,6 +7192,10 @@ is_color_seen('red') / color_x('red') / color_size('red')
     const todo = modes.filter((m) => !cam.isReady(m));
     if (todo.length) log(t('cam_wait'), 'sys');
     await Promise.all(modes.map((m) => cam.enable(m, true)));
+    if (modes.includes('learn')) {
+      if (!cam.model && cam.canTrain()) cam.train();
+      if (!cam.model) log(t('learn_need'), 'warn');
+    }
     const failed = modes.filter((m) => cam.errors[m]);
     if (failed.length) { failed.forEach((m) => log(`${t('cam_err_model')} — ${t('cam_m_' + m)}: ${cam.errors[m]}`, 'err')); return false; }
     if (todo.length) log(t('cam_ready_log'), 'sys');
@@ -6858,7 +7358,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
       cb.parentElement.dataset.st = st;
       cb.parentElement.title = st === 'error' ? cam.errors[m] : '';
     });
-    const busy = ['pose', 'hand', 'object'].some((m) => cam.status(m) === 'loading');
+    const busy = ['pose', 'hand', 'object', 'learn'].some((m) => cam.status(m) === 'loading');
     $('#camStatus').textContent = !cam.on ? t('cam_off') : busy ? t('cam_loading') : `${cam.fps} fps`;
   }
   function renderCamRead() {
@@ -6867,13 +7367,179 @@ is_color_seen('red') / color_x('red') / color_size('red')
     if (cam.want.pose) out.push(`<span><b>${t('cam_person')}</b> ${yes(cam.personSeen())}</span>`);
     if (cam.want.hand) out.push(`<span><b>${t('cam_m_hand')}</b> ${cam.hand ? esc(t('g_' + cam.hand.gesture)) : '–'}</span>`, `<span><b>${t('cam_fingers')}</b> ${cam.hand ? cam.fingerCount() : '–'}</span>`);
     if (cam.want.object) { const names = [...new Set(cam.objects.map((o) => window.CAM_LABEL(o.name)))]; out.push(`<span><b>${t('cam_m_object')}</b> ${names.length ? esc(names.join(', ')) : '–'}</span>`); }
-    if (cam.want.color) { const cs = Object.keys(cam.colors).filter((k) => cam.colors[k].seen).map((k) => t('cc_' + k)); out.push(`<span><b>${t('cam_m_color')}</b> ${cs.length ? esc(cs.join(', ')) : '–'}</span>`); }
+    if (cam.want.color || cam.learnedColors.length) { const cs = Object.keys(cam.colors).filter((k) => cam.colors[k].seen).map((k) => (k.startsWith('u:') ? '★ ' + window.WEDO_LEARN.colorName(k) : t('cc_' + k))); out.push(`<span><b>${t('cam_m_color')}</b> ${cs.length ? esc(cs.join(', ')) : '–'}</span>`); }
+    if (cam.want.learn && cam.model) { const nm = cam.learnedName(); out.push(`<span><b>🧠</b> ${nm ? esc(nm) + ' ' + cam.pred.conf + '%' : '–'}</span>`); }
     const html = out.join('');
     if ($('#camRead').innerHTML !== html) $('#camRead').innerHTML = html;
   }
   cam.addEventListener('change', renderCam);
   setInterval(() => { if (cam.on && !camWin.hidden) renderCamRead(); }, 200);
   try { if (localStorage.getItem('wedomakers-cam')) showCamWin(true); } catch (e) {}
+
+  /* ---------- AI 학습 창 (사물 학습 · 색 학습 · 학습 방법 안내) ---------- */
+  window.WEDO_LEARN = {
+    classes: () => cam.classes,
+    colors: () => cam.learnedColors,
+    className: (id) => { const c = cam.classes.find((q) => q.id === id); return c ? c.name : ''; },
+    colorName: (id) => { const c = cam.learnedColors.find((q) => 'u:' + q.id === id); return c ? c.name : ''; }
+  };
+  const learnBg = $('#learnBg'), learnEl = learnBg.querySelector('.learn');
+  const lctx = $('#learnCanvas').getContext('2d');
+  let ltab = 'obj', learnLoop = 0;
+  function openLearn(tab) {
+    learnBg.hidden = false;
+    setLTab(tab || ltab);
+    renderLearn();
+    if (cam.on) cam.enable('learn', true);
+    const draw = () => {
+      if (learnBg.hidden) return;
+      const src = $('#camCanvas');
+      if (cam.on) lctx.drawImage(src, 0, 0, 640, 480); else { lctx.fillStyle = '#111'; lctx.fillRect(0, 0, 640, 480); }
+      learnLoop = requestAnimationFrame(draw);
+    };
+    cancelAnimationFrame(learnLoop); draw();
+  }
+  function closeLearn() { learnBg.hidden = true; cancelAnimationFrame(learnLoop); stopRec(); }
+  $('#learnClose').onclick = closeLearn;
+  learnBg.addEventListener('mousedown', (e) => { if (e.target === learnBg) closeLearn(); });
+  function setLTab(tab) {
+    ltab = tab;
+    learnBg.querySelectorAll('[data-ltab]').forEach((b) => b.classList.toggle('on', b.dataset.ltab === tab));
+    learnBg.querySelectorAll('.lpane').forEach((p) => p.classList.toggle('on', p.id === 'lp-' + tab));
+    learnEl.classList.toggle('color-tab', tab === 'color');
+    if (tab === 'guide') $('#lp-guide').innerHTML = t('guide_html');
+    if (tab === 'color' && cam.on) cam.enable('color', true);
+  }
+  learnBg.querySelectorAll('[data-ltab]').forEach((b) => (b.onclick = () => setLTab(b.dataset.ltab)));
+  async function camOnForLearn() {
+    const sup = WeCam.Camera.support();
+    if (sup !== 'ok') { toast(t(sup === 'insecure' ? 'cam_insecure' : 'cam_unsupported')); return false; }
+    try { await cam.start(); } catch (e) { toast(t('cam_denied')); return false; }
+    showCamWin(true);
+    cam.enable('learn', true);
+    if (ltab === 'color') cam.enable('color', true);
+    return true;
+  }
+  $('#learnCamOn').onclick = camOnForLearn;
+
+  // 기본 클래스: 물건 1, 물건 2, 배경
+  function ensureDefaultClasses() {
+    if (cam.classes.length) return;
+    cam.addClass(t('learn_cls_default') + ' 1'); cam.addClass(t('learn_cls_default') + ' 2'); cam.addClass(t('learn_cls_bg'));
+  }
+  let rec = null, lastSeq = 0;
+  function startRec(id, btn) {
+    stopRec();
+    if (!cam.on) { toast(t('learn_cam_needed')); return; }
+    rec = { id, btn }; btn.classList.add('rec');
+    lastSeq = cam.embSeq || 0;
+  }
+  function stopRec() { if (rec) { rec.btn.classList.remove('rec'); rec = null; renderLearn(); } }
+  cam.addEventListener('embed', () => {
+    if (rec && cam.embSeq !== lastSeq) {
+      lastSeq = cam.embSeq;
+      if (cam.addSample(rec.id)) {
+        const c = cam.classes.find((q) => q.id === rec.id);
+        const el = document.querySelector(`[data-cls="${rec.id}"]`);
+        if (c && el) { el.querySelector('.cls-count').textContent = `${c.samples.length} ${t('learn_photos')}`; }
+      }
+    }
+    if (!learnBg.hidden) renderPredict();
+  });
+  window.addEventListener('pointerup', stopRec);
+
+  function renderLearn() {
+    if (learnBg.hidden) return;
+    $('#learnCamOn').style.display = cam.on ? 'none' : '';
+    const busy = cam.status('learn') === 'loading';
+    $('#learnStatus').textContent = !cam.on ? t('learn_cam_needed') : busy ? t('cam_loading') : (cam.model ? `✓ ${t('learn_trained')}` : '');
+    // 클래스 목록
+    $('#clsList').innerHTML = cam.classes.map((c) => `
+      <div class="cls" data-cls="${c.id}">
+        <div class="cls-top"><input value="${esc(c.name)}" data-rename="${c.id}" aria-label="${t('learn_rename')}"><span class="cls-count">${c.samples.length} ${t('learn_photos')}</span></div>
+        <div class="cls-thumbs">${c.thumbs.map((u) => `<img src="${u}" alt="">`).join('')}</div>
+        <div class="cls-btns">
+          <button class="btn hold" data-hold="${c.id}">${t('learn_hold')}</button>
+          <button class="btn small" data-clear="${c.id}">${t('learn_clear')}</button>
+          <button class="btn small ghost" data-del="${c.id}">${t('learn_delete')}</button>
+        </div>
+      </div>`).join('');
+    $('#clsList').querySelectorAll('[data-hold]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); startRec(b.dataset.hold, b); }));
+    $('#clsList').querySelectorAll('[data-clear]').forEach((b) => (b.onclick = () => cam.clearSamples(b.dataset.clear)));
+    $('#clsList').querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => Blockly.dialog.confirm(t('learn_delete') + '?', (ok) => ok && cam.removeClass(b.dataset.del))));
+    $('#clsList').querySelectorAll('[data-rename]').forEach((inp) => (inp.onchange = () => { cam.renameClass(inp.dataset.rename, inp.value.trim() || '?'); refreshLearnBlocks(); }));
+    const total = cam.classes.reduce((a, c) => a + c.samples.length, 0);
+    $('#trainBtn').disabled = !cam.canTrain();
+    $('#trainInfo').textContent = !cam.canTrain() ? t('learn_need') : cam.model ? `✓ ${t('learn_trained')} — ${cam.classes.filter((c) => c.samples.length >= 3).length} × ${total} ${t('learn_photos')}` : t('learn_retrain');
+    // 색 목록
+    $('#colorList').innerHTML = cam.learnedColors.length ? cam.learnedColors.map((c) => `
+      <div class="lcolor" data-col="${c.id}">
+        <div class="sw" style="background:${c.rgb}"></div>
+        <div class="row"><input type="text" value="${esc(c.name)}" data-cname="${c.id}" aria-label="${t('learn_color_name')}"><span class="found" data-found="${c.id}"></span>
+          <button class="btn small ghost" data-cdel="${c.id}">${t('learn_cdelete')}</button></div>
+        <div class="row"><span class="muted">${t('learn_color_range')}</span><input type="range" min="4" max="40" value="${c.hr}" data-crange="${c.id}"><span class="muted" data-crv="${c.id}">±${c.hr}°</span></div>
+      </div>`).join('') : `<p class="muted">${t('learn_color_empty')}</p>`;
+    $('#colorList').querySelectorAll('[data-cname]').forEach((inp) => (inp.onchange = () => { cam.updateColor(inp.dataset.cname, { name: inp.value.trim() || '?' }); refreshLearnBlocks(); }));
+    $('#colorList').querySelectorAll('[data-cdel]').forEach((b) => (b.onclick = () => cam.removeColor(b.dataset.cdel)));
+    $('#colorList').querySelectorAll('[data-crange]').forEach((r) => (r.oninput = () => {
+      const c = cam.learnedColors.find((q) => q.id === r.dataset.crange); if (!c) return;
+      c.hr = Number(r.value); document.querySelector(`[data-crv="${c.id}"]`).textContent = `±${c.hr}°`; scheduleSave();
+    }));
+    renderPredict();
+  }
+  function renderPredict() {
+    if (learnBg.hidden) return;
+    const box = $('#learnPredict');
+    if (ltab === 'color') {
+      cam.learnedColors.forEach((c) => {
+        const el = document.querySelector(`[data-found="${c.id}"]`); if (!el) return;
+        const seen = cam.colorSeen('u:' + c.id);
+        el.textContent = seen ? `✓ ${t('learn_color_found')} (${cam.colorPos('u:' + c.id, 'size')}%)` : t('learn_color_missing');
+        el.classList.toggle('yes', seen);
+      });
+      box.innerHTML = '';
+      return;
+    }
+    if (!cam.model) { box.innerHTML = `<p class="muted">${t('learn_test_hint')}</p>`; return; }
+    const p = cam.pred;
+    box.innerHTML = `<b>${t('learn_result')}</b>` + cam.classes.map((c) => {
+      const v = p ? (p.scores[c.id] || 0) : 0;
+      return `<div class="pbar ${p && p.top === c.id && v >= WeCam.CONF_MIN ? 'top' : ''}"><span class="nm">${esc(c.name)}</span><span class="tr"><i style="width:${v}%"></i></span><span class="pc">${v}%</span></div>`;
+    }).join('');
+  }
+  setInterval(() => { if (!learnBg.hidden && ltab === 'color') renderPredict(); }, 250);
+  $('#addCls').onclick = () => { cam.addClass(`${t('learn_cls_default')} ${cam.classes.length + 1}`); };
+  $('#trainBtn').onclick = () => { if (cam.train()) { toast(`✓ ${t('learn_trained')}`); log(`🧠 ${t('learn_trained')}: ${cam.classes.map((c) => `${c.name}(${c.samples.length})`).join(', ')}`, 'sys'); } };
+  $('#takeColor').onclick = async () => {
+    if (!cam.on && !(await camOnForLearn())) return;
+    const smp = cam.sampleCenterColor();
+    if (!smp || !smp.ok) { $('#colorMsg').hidden = false; $('#colorMsg').textContent = t('learn_color_fail'); return; }
+    $('#colorMsg').hidden = true;
+    Blockly.dialog.prompt(t('learn_color_name'), `${t('learn_color_default')} ${cam.learnedColors.length + 1}`, (name) => {
+      if (name == null) return;
+      cam.addColor(name.trim() || t('learn_color_default'), smp);
+      cam.enable('color', true);
+      refreshLearnBlocks();
+    });
+  };
+  $('#exportLearn').onclick = () => download(learnFileName(), JSON.stringify(cam.exportLearning()), 'application/json');
+  $('#importLearn').onclick = () => $('#learnFile').click();
+  $('#learnFile').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { cam.importLearning(JSON.parse(await f.text())); refreshLearnBlocks(); toast(t('opened')); } catch (err) { toast(t('open_fail')); }
+    e.target.value = '';
+  };
+  // 학습 이름이 바뀌면 블록 글씨와 Python 코드도 바로 바꾼다
+  function refreshLearnBlocks() {
+    if (!ws) return;
+    ws.getAllBlocks(false).forEach((b) => { ['CLS', 'COLOR'].forEach((f) => { const fld = b.getField(f); if (fld && fld instanceof Blockly.FieldDropdown) { try { fld.getOptions(false); fld.forceRerender(); } catch (e) {} } }); });
+    refreshCode();
+  }
+  let saveT;
+  function scheduleSave() { clearTimeout(saveT); saveT = setTimeout(() => { autosave(); refreshCode(); }, 400); }
+  cam.addEventListener('learning', (e) => { if (e.detail !== 'samples') renderLearn(); scheduleSave(); });
+  cam.addEventListener('change', renderLearn);
+  $('#btnLearn').onclick = () => { ensureDefaultClasses(); openLearn(); };
 
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');
@@ -6985,7 +7651,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
       const nm = $('#projName').value;
       ['proj_example', 'proj_new', 'proj_default'].forEach((k) => { if (I18N.all(k).includes(nm)) $('#projName').value = t(k); });
       createWorkspace(state);
-      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); autosave();
+      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); renderLearn(); if (ltab === 'guide') setLTab('guide'); autosave();
     }
   }
   langSel.onchange = () => { rt.stop('user'); setLanguage(langSel.value); };

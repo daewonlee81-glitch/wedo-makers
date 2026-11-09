@@ -79,6 +79,7 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .camwin[hidden]{display:none}
 .camwin.sz-s{width:240px}.camwin.sz-m{width:340px}.camwin.sz-l{width:480px}
 .cam-head{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:#0f766e;cursor:move;user-select:none;touch-action:none;font-size:13px}
+.cam-head .learnbtn{width:auto;padding:0 8px;font-size:12px;font-weight:700;background:#6d28d9}
 .cam-head button{border:0;background:rgba(255,255,255,.18);color:#fff;width:24px;height:24px;border-radius:6px;font-size:15px;line-height:1;padding:0}
 .cam-status{font-size:11.5px;opacity:.85;font-weight:600}
 .cam-view{position:relative;background:#000;aspect-ratio:4/3}
@@ -95,6 +96,65 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .cam-read b{color:#7fd8cf;margin-right:3px}
 .cam-read .muted{color:#9fb0c6}
 #btnCam.on{background:#e6f6f4;border-color:#9fd9d1;color:#0f5f58}
+/* AI 학습 창 */
+.learn-bg{position:fixed;inset:0;z-index:90;background:rgba(15,22,36,.5);display:flex;align-items:center;justify-content:center;padding:14px}
+.learn-bg[hidden]{display:none}
+.learn{background:#fff;border-radius:16px;width:min(1180px,100%);height:min(780px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.learn-head{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;background:#6d28d9;color:#fff}
+.learn-head b{font-size:16px}
+.learn-tabs{display:flex;gap:4px}
+.learn-tabs button{border:0;background:rgba(255,255,255,.15);color:#fff;padding:7px 13px;border-radius:9px;font-weight:700}
+.learn-tabs button.on{background:#fff;color:#5b21b6}
+.learn-head .x{border:0;background:rgba(255,255,255,.18);color:#fff;width:30px;height:30px;border-radius:8px;font-size:18px}
+.learn-body{flex:1;display:flex;min-height:0}
+.learn-left{width:46%;min-width:300px;padding:14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:10px;overflow:auto;background:#faf8ff}
+.learn-view{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;flex:none}
+.learn-view canvas{width:100%;height:100%;display:block}
+.learn-view #learnCamOn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.center-box{position:absolute;left:40%;top:37.5%;width:20%;height:25%;border:3px dashed #fff;border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.25);display:none;pointer-events:none}
+.learn.color-tab .center-box{display:block}
+.learn-status{font-size:12.5px;color:var(--ink2)}
+.pbar{display:grid;grid-template-columns:minmax(80px,32%) 1fr 46px;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.pbar .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar .tr{height:16px;border-radius:8px;background:#ede9fe;overflow:hidden}
+.pbar .tr i{display:block;height:100%;background:#8b5cf6;transition:width .15s}
+.pbar.top .tr i{background:#6d28d9}
+.pbar .pc{text-align:right;font:700 13px "JetBrains Mono",monospace}
+.learn-right{flex:1;overflow:auto;padding:14px 16px}
+.lpane{display:none}.lpane.on{display:block}
+.cls{border:1px solid #ddd6fe;border-radius:12px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.cls-top{display:flex;align-items:center;gap:8px}
+.cls-top input{flex:1;font:inherit;font-weight:700;border:1px solid transparent;border-radius:7px;padding:4px 6px}
+.cls-top input:hover,.cls-top input:focus{border-color:#ddd6fe;outline:none}
+.cls-count{font:700 13px "JetBrains Mono",monospace;color:#5b21b6;background:#f3f0ff;border-radius:7px;padding:2px 8px;white-space:nowrap}
+.cls-thumbs{display:flex;gap:4px;margin:8px 0;min-height:36px;flex-wrap:wrap}
+.cls-thumbs img{width:48px;height:36px;object-fit:cover;border-radius:5px;border:1px solid #e5e7eb}
+.cls-btns{display:flex;gap:6px;flex-wrap:wrap}
+.hold{background:#6d28d9;border-color:#6d28d9;color:#fff;user-select:none;touch-action:none}
+.hold.rec{background:#dc2626;border-color:#dc2626}
+.hold.rec:before{content:"● ";animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.btn.small{padding:5px 9px;font-size:12.5px}
+.btn.big{padding:10px 18px;font-size:15px}
+.btn.primary.big{background:#6d28d9;border-color:#6d28d9}
+.train-row{display:flex;align-items:center;gap:12px;margin:14px 0 10px}
+.learn-io{display:flex;gap:6px;flex-wrap:wrap}
+.warnmsg{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:9px;padding:8px 10px;margin:10px 0;font-size:13px}
+.lcolor{display:grid;grid-template-columns:40px 1fr;gap:4px 10px;align-items:center;border:1px solid #ddd6fe;border-radius:12px;padding:10px 12px;margin:10px 0}
+.lcolor .sw{width:40px;height:40px;border-radius:10px;border:2px solid #fff;box-shadow:0 0 0 1px #ccc;grid-row:span 2}
+.lcolor .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lcolor input[type=text]{font:inherit;font-weight:700;border:1px solid #ddd6fe;border-radius:7px;padding:4px 6px;width:140px}
+.lcolor input[type=range]{width:140px;accent-color:#6d28d9}
+.found{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f1f5f9;color:#64748b}
+.found.yes{background:#dcfce7;color:#166534}
+.guide{line-height:1.7;color:#2d3546;font-size:14px}
+.guide h4{margin:16px 0 6px;font-size:15.5px;color:#4c1d95}
+.guide h4:first-child{margin-top:0}
+.guide ol,.guide ul{padding-left:22px;margin:6px 0}
+.guide li{margin:4px 0}
+.guide code{background:#f3f0ff;color:#4c1d95;padding:1px 6px;border-radius:5px;font-size:12.5px}
+.guide .tip{background:#f5f3ff;border-left:4px solid #8b5cf6;padding:8px 12px;border-radius:0 9px 9px 0}
+@media (max-width:820px){.learn-body{flex-direction:column;overflow:auto}.learn-left{width:auto;border-right:0;border-bottom:1px solid var(--line)}.learn-right{overflow:visible}}
 /* 언어 선택 */
 #langSel{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font:inherit;font-weight:600;color:var(--ink)}
 .linkbtn{border:0;background:none;color:var(--brand);text-decoration:underline;margin-left:8px;font:inherit;font-size:12px;padding:0}
@@ -232,6 +292,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
         <div class="cam-head" id="camHead">
           <b data-i18n="cam_title">AI 카메라</b><span class="cam-status" id="camStatus"></span>
           <span class="spacer"></span>
+          <button id="btnLearn" class="learnbtn" data-i18n="learn_btn">🧠 AI 학습하기</button>
           <button id="camSize" title="S / M / L">⤡</button><button id="camClose" aria-label="close">×</button>
         </div>
         <div class="cam-view"><canvas id="camCanvas" width="640" height="480"></canvas><button class="btn primary" id="camPower">카메라 켜기</button></div>
@@ -240,6 +301,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
           <label><input type="checkbox" data-mode="hand"><span data-i18n="cam_m_hand">손 모양</span></label>
           <label><input type="checkbox" data-mode="object"><span data-i18n="cam_m_object">사물</span></label>
           <label><input type="checkbox" data-mode="color"><span data-i18n="cam_m_color">색깔</span></label>
+          <label><input type="checkbox" data-mode="learn"><span data-i18n="cam_m_learn">학습한 사물</span></label>
         </div>
         <div class="cam-read" id="camRead"></div>
       </div>
@@ -308,6 +370,52 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       </section>
     </aside>
   </main>
+</div>
+
+<div class="learn-bg" id="learnBg" hidden>
+  <div class="learn">
+    <div class="learn-head">
+      <b data-i18n="learn_title">AI 학습</b>
+      <div class="learn-tabs">
+        <button data-ltab="obj" class="on" data-i18n="learn_tab_obj">사물 학습</button>
+        <button data-ltab="color" data-i18n="learn_tab_color">색 학습</button>
+        <button data-ltab="guide" data-i18n="learn_tab_guide">학습 방법 안내</button>
+      </div>
+      <span class="spacer"></span>
+      <button class="x" id="learnClose" aria-label="close">×</button>
+    </div>
+    <div class="learn-body">
+      <div class="learn-left">
+        <div class="learn-view"><canvas id="learnCanvas" width="640" height="480"></canvas><div class="center-box" id="centerBox"></div>
+          <button class="btn primary" id="learnCamOn" data-i18n="cam_start">카메라 켜기</button></div>
+        <div class="learn-status" id="learnStatus"></div>
+        <div id="learnPredict"></div>
+      </div>
+      <div class="learn-right">
+        <div class="lpane on" id="lp-obj">
+          <div id="clsList"></div>
+          <button class="btn" id="addCls" data-i18n="learn_add_cls">＋ 클래스 추가</button>
+          <div class="train-row">
+            <button class="btn primary big" id="trainBtn" data-i18n="learn_train">학습시키기</button>
+            <span id="trainInfo" class="muted"></span>
+          </div>
+          <div class="learn-io">
+            <button class="btn" id="exportLearn" data-i18n="learn_export">Python용 학습 파일 저장</button>
+            <button class="btn" id="importLearn" data-i18n="learn_import">학습 파일 불러오기</button>
+            <input type="file" id="learnFile" accept=".json" hidden>
+          </div>
+          <p class="muted" data-i18n="learn_saved_note"></p>
+        </div>
+        <div class="lpane" id="lp-color">
+          <p class="muted" data-i18n="learn_color_center"></p>
+          <button class="btn primary big" id="takeColor" data-i18n="learn_color_take">가운데 색 학습</button>
+          <div id="colorMsg" class="warnmsg" hidden></div>
+          <div id="colorList"></div>
+        </div>
+        <div class="lpane" id="lp-guide"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>

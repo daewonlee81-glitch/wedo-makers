@@ -9,8 +9,29 @@
   const MODELS = {
     pose: ['./models/pose_landmarker_lite.task', 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task'],
     hand: ['./models/gesture_recognizer.task', 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task'],
-    object: ['./models/efficientdet_lite0.tflite', 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite']
+    object: ['./models/efficientdet_lite0.tflite', 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite'],
+    learn: ['./models/mobilenet_v3_small.tflite', 'https://storage.googleapis.com/mediapipe-models/image_embedder/mobilenet_v3_small/float32/1/mobilenet_v3_small.tflite']
   };
+  const KNN_K = 7, MAX_SAMPLES = 120, CONF_MIN = 60;
+  // 특징 벡터 ↔ 문자열 (int8 로 줄여 저장: 프로젝트 파일·Python 과 같은 형식)
+  function encodeVec(v) {
+    const b = new Int8Array(v.length);
+    for (let i = 0; i < v.length; i++) b[i] = Math.max(-127, Math.min(127, Math.round(v[i] * 127)));
+    let str = ''; const u = new Uint8Array(b.buffer);
+    for (let i = 0; i < u.length; i++) str += String.fromCharCode(u[i]);
+    return btoa(str);
+  }
+  function decodeVec(b64) {
+    const str = atob(b64), b = new Int8Array(str.length);
+    for (let i = 0; i < str.length; i++) b[i] = (str.charCodeAt(i) << 24) >> 24;
+    const v = new Float32Array(b.length); let n = 0;
+    for (let i = 0; i < b.length; i++) { v[i] = b[i] / 127; n += v[i] * v[i]; }
+    n = Math.sqrt(n) || 1; for (let i = 0; i < v.length; i++) v[i] /= n;
+    return v;
+  }
+  const hueDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  let uid = Date.now() % 100000;
+  const newId = (p) => p + (++uid).toString(36);
   // MediaPipe 포즈 랜드마크 번호
   const BODY = {
     NOSE: 0, LEFT_SHOULDER: 11, RIGHT_SHOULDER: 12, LEFT_ELBOW: 13, RIGHT_ELBOW: 14,
@@ -48,7 +69,14 @@
       this.video = document.createElement('video');
       this.video.playsInline = true; this.video.muted = true;
       this.stream = null; this.running = false;
-      this.want = { pose: false, hand: false, object: false, color: false };
+      this.want = { pose: false, hand: false, object: false, color: false, learn: false };
+      // 학습: 사물(클래스별 특징 벡터) · 색(HSV 범위)
+      this.classes = []; // { id, name, samples: [Float32Array], thumbs: [dataURL] }
+      this.learnedColors = []; // { id, name, h, hr, smin, vmin, rgb }
+      this.model = null; // 학습된 모델 { ids, vecs }
+      this.pred = null; // { top, conf, scores: { id: % } }
+      this.lastEmb = null;
+      this._thumb = document.createElement('canvas'); this._thumb.width = 64; this._thumb.height = 48;
       this.tasks = {}; this.loading = {}; this.errors = {};
       this.vision = null; this.fileset = null;
       this.pose = null; // 33개 랜드마크 (정규화 좌표)
@@ -114,6 +142,7 @@
             const base = { modelAssetBuffer: buf, delegate };
             if (mode === 'pose') return v.PoseLandmarker.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', numPoses: 1 });
             if (mode === 'hand') return v.GestureRecognizer.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', numHands: 1 });
+            if (mode === 'learn') return v.ImageEmbedder.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', l2Normalize: true, quantize: false });
             return v.ObjectDetector.createFromOptions(this.fileset, { baseOptions: base, runningMode: 'VIDEO', scoreThreshold: 0.4, maxResults: 8 });
           };
           try { this.tasks[mode] = await make('GPU'); } catch (e) { this.tasks[mode] = await make('CPU'); }
@@ -146,13 +175,18 @@
         const ts = Math.max(this._lastTs + 1, Math.round(now));
         this._lastTs = ts;
         // 무거운 모델은 번갈아 돌려 화면이 끊기지 않게 한다
-        const heavy = ['pose', 'hand', 'object'].filter((m) => this.want[m] && this.tasks[m]);
+        const heavy = ['pose', 'hand', 'object', 'learn'].filter((m) => this.want[m] && this.tasks[m]);
         const pick = heavy.length ? heavy[this._turn++ % heavy.length] : null;
         try {
           if (pick === 'pose') { const r = this.tasks.pose.detectForVideo(v, ts); this.pose = r.landmarks && r.landmarks[0] ? r.landmarks[0] : null; }
           if (pick === 'hand') {
             const r = this.tasks.hand.recognizeForVideo(v, ts);
             this.hand = r.landmarks && r.landmarks[0] ? { lm: r.landmarks[0], gesture: (r.gestures && r.gestures[0] && r.gestures[0][0] && r.gestures[0][0].categoryName) || 'None' } : null;
+          }
+          if (pick === 'learn') {
+            const r = this.tasks.learn.embedForVideo(v, ts);
+            const e = r.embeddings && r.embeddings[0] && r.embeddings[0].floatEmbedding;
+            if (e) { this.lastEmb = Float32Array.from(e); this.embSeq = (this.embSeq || 0) + 1; this.pred = this._predict(this.lastEmb); this.dispatchEvent(new Event('embed')); }
           }
           if (pick === 'object') {
             const r = this.tasks.object.detectForVideo(v, ts);
@@ -167,7 +201,8 @@
         if (!this.want.pose) this.pose = null;
         if (!this.want.hand) this.hand = null;
         if (!this.want.object) this.objects = [];
-        if (this.want.color) this._colors(); else this.colors = {};
+        if (!this.want.learn) this.pred = null;
+        if (this.want.color || this.learnedColors.length) this._colors(); else this.colors = {};
         this._draw();
         this._frames++;
         if (now - this._fpsT > 1000) { this.fps = this._frames; this._frames = 0; this._fpsT = now; this._emit(); }
@@ -180,7 +215,9 @@
       const c = this._wctx, W = 80, H = 60;
       c.save(); c.scale(-1, 1); c.drawImage(this.video, -W, 0, W, H); c.restore(); // 거울
       const px = c.getImageData(0, 0, W, H).data;
-      const acc = {}; Object.keys(COLOR_RULES).forEach((k) => (acc[k] = { n: 0, sx: 0, sy: 0 }));
+      const rules = Object.assign({}, COLOR_RULES);
+      this.learnedColors.forEach((c) => { rules['u:' + c.id] = (h, s, v) => hueDist(h, c.h) <= c.hr && s >= c.smin && v >= c.vmin; });
+      const acc = {}; Object.keys(rules).forEach((k) => (acc[k] = { n: 0, sx: 0, sy: 0 }));
       for (let i = 0, p = 0; i < px.length; i += 4, p++) {
         const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
         const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
@@ -188,7 +225,7 @@
         let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
         h = (h * 60 + 360) % 360;
         const s = d / mx;
-        for (const k in COLOR_RULES) if (COLOR_RULES[k](h, s, mx)) { const a = acc[k]; a.n++; a.sx += p % W; a.sy += (p / W) | 0; }
+        for (const k in rules) if (rules[k](h, s, mx)) { const a = acc[k]; a.n++; a.sx += p % W; a.sy += (p / W) | 0; }
       }
       const out = {};
       for (const k in acc) {
@@ -220,6 +257,15 @@
         this.hand.lm.forEach((L) => { const [x, y] = P(L); ctx.beginPath(); ctx.arc(x, y, Math.max(2, W / 140), 0, 7); ctx.fill(); });
       }
       ctx.font = `700 ${Math.max(11, W / 28)}px sans-serif`;
+      if (this.pred && this.pred.top) {
+        const c = this.classes.find((q) => q.id === this.pred.top);
+        if (c) {
+          const label = `🧠 ${c.name} ${this.pred.conf}%`;
+          const tw = ctx.measureText(label).width + 14;
+          ctx.fillStyle = this.pred.conf >= CONF_MIN ? 'rgba(124,58,237,.88)' : 'rgba(60,60,70,.7)';
+          ctx.fillRect(8, H - 34, tw, 26); ctx.fillStyle = '#fff'; ctx.fillText(label, 15, H - 15);
+        }
+      }
       this.objects.forEach((o) => {
         ctx.strokeStyle = '#30d158'; ctx.lineWidth = 2;
         ctx.strokeRect(o.bx * W, o.by * H, o.w * W, o.h * H);
@@ -231,7 +277,8 @@
       Object.entries(this.colors).forEach(([k, c]) => {
         if (!c.seen) return;
         const x = c.x / 100 * W, y = (1 - c.y / 100) * H;
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.fillStyle = COLOR_DRAW[k];
+        const lc = k.startsWith('u:') && this.learnedColors.find((q) => 'u:' + q.id === k);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.fillStyle = lc ? lc.rgb : COLOR_DRAW[k];
         ctx.beginPath(); ctx.arc(x, y, Math.max(6, W / 30), 0, 7); ctx.fill(); ctx.stroke();
       });
     }
@@ -284,6 +331,107 @@
     colorSeen(c) { return !!(this.colors[c] && this.colors[c].seen); }
     colorPos(c, axis) { const v = this.colors[c]; if (!v) return axis === 'size' ? 0 : -1; return v[axis]; }
 
+    /* --- 사물 학습 (특징 벡터 + 최근접 이웃) --- */
+    addClass(name) { const c = { id: newId('k'), name, samples: [], thumbs: [] }; this.classes.push(c); this._changed(); return c; }
+    renameClass(id, name) { const c = this.classes.find((q) => q.id === id); if (c) { c.name = name; this._changed(); } }
+    removeClass(id) { this.classes = this.classes.filter((q) => q.id !== id); this.model = null; this._changed(); }
+    clearSamples(id) { const c = this.classes.find((q) => q.id === id); if (c) { c.samples = []; c.thumbs = []; this.model = null; this._changed(); } }
+    addSample(id) {
+      const c = this.classes.find((q) => q.id === id);
+      if (!c || !this.lastEmb || c.samples.length >= MAX_SAMPLES) return false;
+      c.samples.push(this.lastEmb);
+      if (c.thumbs.length < 8 || c.samples.length % 6 === 0) {
+        const tc = this._thumb.getContext('2d');
+        tc.save(); tc.scale(-1, 1); tc.drawImage(this.video, -64, 0, 64, 48); tc.restore();
+        const url = this._thumb.toDataURL('image/jpeg', 0.6);
+        if (c.thumbs.length >= 8) c.thumbs.shift();
+        c.thumbs.push(url);
+      }
+      this.model = null; this._changed('samples');
+      return true;
+    }
+    canTrain() { return this.classes.filter((c) => c.samples.length >= 3).length >= 2; }
+    train() {
+      const ids = [], vecs = [];
+      this.classes.forEach((c) => { if (c.samples.length >= 3) c.samples.forEach((v) => { ids.push(c.id); vecs.push(v); }); });
+      this.model = ids.length ? { ids, vecs, at: Date.now() } : null;
+      this._changed();
+      return this.model;
+    }
+    _predict(e) {
+      const m = this.model; if (!m) return null;
+      const sims = m.vecs.map((v, i) => { let d = 0; for (let j = 0; j < v.length; j++) d += v[j] * e[j]; return [d, m.ids[i]]; });
+      sims.sort((a, b) => b[0] - a[0]);
+      const k = Math.min(KNN_K, sims.length), votes = {}, sum = {};
+      for (let i = 0; i < k; i++) { const [d, id] = sims[i]; votes[id] = (votes[id] || 0) + 1; sum[id] = (sum[id] || 0) + d; }
+      const scores = {};
+      this.classes.forEach((c) => { scores[c.id] = Math.round((votes[c.id] || 0) / k * 100); });
+      let top = null;
+      Object.keys(votes).forEach((id) => { if (!top || votes[id] > votes[top] || (votes[id] === votes[top] && sum[id] > sum[top])) top = id; });
+      return { top, conf: top ? scores[top] : 0, scores };
+    }
+    learnedIs(id) { return !!(this.pred && this.pred.top === id && this.pred.conf >= CONF_MIN); }
+    learnedName() {
+      if (!this.pred || this.pred.conf < CONF_MIN) return '';
+      const c = this.classes.find((q) => q.id === this.pred.top); return c ? c.name : '';
+    }
+    learnedConf(id) { return this.pred && this.pred.scores[id] !== undefined ? this.pred.scores[id] : 0; }
+
+    /* --- 색 학습: 화면 가운데 네모의 색을 잰다 --- */
+    sampleCenterColor() {
+      if (!this.on) return null;
+      const c = this._wctx, W = 80, H = 60;
+      c.save(); c.scale(-1, 1); c.drawImage(this.video, -W, 0, W, H); c.restore();
+      const px = c.getImageData(W * 0.4, H * 0.375, W * 0.2, H * 0.25).data;
+      let sx = 0, sy = 0, n = 0; const ss = [], vs = []; let rr = 0, gg = 0, bb = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        rr += px[i]; gg += px[i + 1]; bb += px[i + 2];
+        if (d < 0.05) continue;
+        let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h = (h * 60 + 360) % 360;
+        sx += Math.cos(h * Math.PI / 180); sy += Math.sin(h * Math.PI / 180); n++;
+        ss.push(d / mx); vs.push(mx);
+      }
+      const cnt = px.length / 4;
+      const rgb = `rgb(${Math.round(rr / cnt)},${Math.round(gg / cnt)},${Math.round(bb / cnt)})`;
+      if (n < cnt * 0.5) return { ok: false, rgb };
+      ss.sort((a, b) => a - b); vs.sort((a, b) => a - b);
+      const med = (a) => a[a.length >> 1];
+      const s = med(ss), v = med(vs);
+      if (s < 0.2) return { ok: false, rgb, s, v };
+      const h = Math.round((Math.atan2(sy, sx) * 180 / Math.PI + 360) % 360);
+      return { ok: true, h, s: r1(s), v: r1(v), rgb, hr: 14, smin: Math.round(Math.max(0.2, s * 0.55) * 100) / 100, vmin: Math.round(Math.max(0.15, v * 0.45) * 100) / 100 };
+    }
+    addColor(name, sample) {
+      const c = { id: newId('c'), name, h: sample.h, hr: sample.hr, smin: sample.smin, vmin: sample.vmin, rgb: sample.rgb };
+      this.learnedColors.push(c); this._changed(); return c;
+    }
+    updateColor(id, patch) { const c = this.learnedColors.find((q) => q.id === id); if (c) { Object.assign(c, patch); this._changed(); } }
+    removeColor(id) { this.learnedColors = this.learnedColors.filter((q) => q.id !== id); this._changed(); }
+
+    /* --- 저장 형식 (프로젝트 파일 · Python 학습 파일 공용) --- */
+    exportLearning() {
+      return {
+        format: 'wedomakers-learning', version: 1, model: 'mobilenet_v3_small',
+        trained: !!this.model,
+        classes: this.classes.map((c) => ({ id: c.id, name: c.name, samples: c.samples.map(encodeVec), thumbs: c.thumbs })),
+        colors: this.learnedColors.map((c) => Object.assign({}, c))
+      };
+    }
+    importLearning(o) {
+      this.classes = []; this.learnedColors = []; this.model = null; this.pred = null;
+      if (o && o.format === 'wedomakers-learning') {
+        this.classes = (o.classes || []).map((c) => ({ id: c.id || newId('k'), name: c.name, samples: (c.samples || []).map(decodeVec), thumbs: c.thumbs || [] }));
+        this.learnedColors = (o.colors || []).map((c) => Object.assign({}, c));
+        if (o.trained) this.train();
+      }
+      this._changed();
+    }
+    hasLearning() { return this.classes.length > 0 || this.learnedColors.length > 0; }
+    _changed(kind) { this.dispatchEvent(new CustomEvent('learning', { detail: kind || '' })); }
+
     summary() {
       return {
         person: this.want.pose ? this.personSeen() : null,
@@ -295,5 +443,5 @@
     }
   }
 
-  window.WeCam = { Camera, BODY };
+  window.WeCam = { Camera, BODY, CONF_MIN };
 })();
