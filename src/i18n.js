@@ -556,6 +556,7 @@
   window.I18N = {
     LANGS, BLOCKLY_CODE, t,
     all(key) { return S[key] || []; },
+    add(table) { Object.assign(S, table); }, // 다른 파일(튜터 등)이 번역을 덧붙일 때
     get lang() { return lang; },
     set(l) { if (IDX[l] === undefined) return; lang = l; try { localStorage.setItem('wedomakers-lang', l); } catch (e) {} },
     detect

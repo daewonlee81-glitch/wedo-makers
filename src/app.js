@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.4.0';
+  const VERSION = '1.5.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -163,6 +163,7 @@
       vars.forEach((v) => items.push({ kind: 'block', type: 'variables_get', fields: { VAR: { id: v.getId() } } }));
       return items;
     });
+    ws.addChangeListener((e) => tutorWatch(e));
     ws.addChangeListener((e) => {
       if (e.type === Blockly.Events.VAR_CREATE || e.type === Blockly.Events.VAR_DELETE || e.type === Blockly.Events.VAR_RENAME || e.type === Blockly.Events.FINISHED_LOADING) renderVars();
       if (e.isUiEvent) return;
@@ -405,6 +406,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     d.innerHTML = `<span class="t">${new Date().toTimeString().slice(0, 8)}</span>${esc(msg)}`;
     if (kind === 'err') {
       const a = document.createElement('button'); a.className = 'linkbtn'; a.textContent = t('report_btn'); a.onclick = openReport; d.appendChild(a);
+      const tb = document.createElement('button'); tb.className = 'linkbtn'; tb.textContent = '🤖 ' + t('tutor_tab'); tb.onclick = () => (tutor.online ? (showTutor('chat'), sendChat(t('chat_q_error'))) : showTutor('check')); d.appendChild(tb);
     }
     logs.appendChild(d);
     while (logs.children.length > 500) logs.firstChild.remove();
@@ -417,6 +419,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x.dataset.tab === id));
     document.querySelectorAll('.pane').forEach((p) => p.classList.toggle('on', p.id === id));
     if (id === 'consolePane') { errCount = 0; $('#errCnt').hidden = true; }
+    if (id === 'tutorPane' && typeof renderTutor === 'function') renderTutor();
   }
   document.querySelectorAll('.tab').forEach((x) => (x.onclick = () => showTab(x.dataset.tab)));
 
@@ -817,6 +820,120 @@ is_color_seen('red') / color_x('red') / color_size('red')
   cam.addEventListener('change', renderLearn);
   $('#btnLearn').onclick = () => { ensureDefaultClasses(); openLearn(); };
 
+  /* ---------- AI 튜터 ---------- */
+  const tutor = new WeTutor.Tutor({
+    ws: () => ws, hub, cam, rt,
+    pySrc: () => pySrc,
+    logs: () => [...document.querySelectorAll('#logs .log')].map((d) => d.textContent)
+  });
+  let tmode = 'check', selectedId = null, chatBusy = false;
+  const mres = {}; // 미션 확인 결과 (다시 그려도 남도록)
+  const tbody = $('#tutorBody');
+  const bot = (html) => `<div class="tmsg"><div class="av">🤖</div><div class="bub">${html}</div></div>`;
+  function showTutor(mode) {
+    showTab('tutorPane');
+    if (mode) setTMode(mode); else renderTutor();
+  }
+  function setTMode(m) {
+    tmode = m;
+    document.querySelectorAll('[data-tmode]').forEach((b) => b.classList.toggle('on', b.dataset.tmode === m));
+    $('#tutorInput').hidden = m !== 'chat';
+    renderTutor();
+  }
+  document.querySelectorAll('[data-tmode]').forEach((b) => (b.onclick = () => setTMode(b.dataset.tmode)));
+  const ICON = { err: '⛔', warn: '⚠️', tip: '💡', ok: '✅' };
+  function renderTutor() {
+    const st = $('#tutorSet');
+    st.classList.toggle('online', !!tutor.online);
+    $('#tutorState').textContent = tutor.online ? t('set_on') : t('set_off');
+    if (!$('#tutorPane').classList.contains('on')) return;
+    if (tmode === 'check') {
+      const items = tutor.check();
+      tbody.innerHTML = bot(t('tutor_hello')) + items.map((it, i) => `<div class="chk ${it.lv}"><span class="ic">${ICON[it.lv]}</span><div>${it.html}${it.id ? ` <button class="linkbtn" data-show="${it.id}">${t('tutor_show')}</button>` : ''}${it.action === 'learn' ? ` <button class="linkbtn" data-learn>${t('tutor_open_learn')}</button>` : ''}</div></div>`).join('');
+      tbody.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { const bl = ws.getBlockById(b.dataset.show); if (bl) { ws.centerOnBlock(bl.id); bl.select(); } }));
+      tbody.querySelectorAll('[data-learn]').forEach((b) => (b.onclick = () => { ensureDefaultClasses(); openLearn('obj'); }));
+    } else if (tmode === 'explain') {
+      const bl = selectedId && ws.getBlockById(selectedId);
+      const x = bl && tutor.explain(bl);
+      tbody.innerHTML = !x ? bot(t('tutor_select_hint')) : `<div class="xcard"><div class="xh" style="background:${x.colour}">${esc(x.cat)}</div><div class="xb"><p><b>${esc(x.text)}</b></p><p>${x.desc}</p>${x.py ? `<div class="muted">${t('tutor_in_python')}</div><pre>${esc(x.py)}</pre>` : ''}</div></div>`;
+    } else if (tmode === 'missions') {
+      tbody.innerHTML = tutor.missions().map((m) => {
+        const done = (() => { try { return m.check(); } catch (e) { return false; } })();
+        return `<div class="mis ${done ? 'done' : ''}" data-mis="${m.id}"><h5>${done ? '✅' : '⬜'} ${t(m.id + '_t')}</h5><p class="goal">${t(m.id + '_g')}</p>
+          <details><summary>${t('m_hint')}</summary>${t(m.id + '_h')}</details>
+          <button class="btn small" data-mcheck="${m.id}">${t('m_check')}</button><span class="res">${mres[m.id] === undefined ? '' : done ? t('m_done') : t('m_not_yet')}</span></div>`;
+      }).join('');
+      tbody.querySelectorAll('[data-mcheck]').forEach((b) => (b.onclick = () => {
+        const m = tutor.missions().find((q) => q.id === b.dataset.mcheck);
+        const ok = (() => { try { return m.check(); } catch (e) { return false; } })();
+        mres[m.id] = ok;
+        const box = b.closest('.mis'); box.classList.toggle('done', ok);
+        box.querySelector('h5').innerHTML = `${ok ? '✅' : '⬜'} ${t(m.id + '_t')}`;
+        box.querySelector('.res').textContent = ok ? t('m_done') : t('m_not_yet');
+        if (!ok) box.querySelector('details').open = true;
+      }));
+    } else {
+      $('#chatChips').innerHTML = ['chat_ask_code', 'chat_ask_error', 'chat_ask_idea'].map((k, i) => `<button data-q="${['chat_q_code', 'chat_q_error', 'chat_q_idea'][i]}">${t(k)}</button>`).join('') +
+        (tutor.chat.length ? `<button data-clearchat>${t('chat_clear')}</button>` : '');
+      $('#chatChips').querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => sendChat(t(b.dataset.q))));
+      const cc = $('#chatChips').querySelector('[data-clearchat]'); if (cc) cc.onclick = () => { tutor.chat = []; renderTutor(); };
+      $('#chatIn').placeholder = t('chat_ph');
+      const msgs = tutor.chat.map((m) => m.role === 'user' ? `<div class="tmsg me"><div class="av">🙂</div><div class="bub">${esc(m.text)}</div></div>` : bot(WeTutor.md(m.text))).join('');
+      tbody.innerHTML = (tutor.online ? bot(t('tutor_hello')) : bot(t('chat_off'))) + msgs + (chatBusy ? bot(`<i>${t('chat_thinking')}</i>`) : '');
+      tbody.scrollTop = tbody.scrollHeight;
+    }
+  }
+  async function sendChat(q) {
+    q = (q || '').trim(); if (!q || chatBusy) return;
+    if (!tutor.online) { renderTutor(); return; }
+    chatBusy = true;
+    tutor.chat.push({ role: 'user', text: q, pending: true });
+    renderTutor();
+    tutor.chat.pop();
+    try { await tutor.ask(q); }
+    catch (e) { tutor.chat.push({ role: 'user', text: q }, { role: 'assistant', text: `⚠ ${t('chat_err')}: ${e.message}` }); }
+    chatBusy = false; renderTutor();
+  }
+  $('#chatSend').onclick = () => { const v = $('#chatIn').value; $('#chatIn').value = ''; sendChat(v); };
+  $('#chatIn').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatSend').click(); } });
+  $('#btnTutor').onclick = () => showTutor();
+  $('#tutorSet').onclick = () => {
+    const c = tutor.cfg;
+    openModal(`<h3>${t('set_title')}</h3><p>${t('set_desc')}</p>
+      <div class="setopt">
+        <label><input type="radio" name="tmode" value="off" ${c.mode === 'off' ? 'checked' : ''}> ${t('set_mode_off')}</label>
+        <label><input type="radio" name="tmode" value="key" ${c.mode === 'key' ? 'checked' : ''}> ${t('set_mode_key')}</label>
+        <label><input type="radio" name="tmode" value="relay" ${c.mode === 'relay' ? 'checked' : ''}> ${t('set_mode_relay')}</label>
+      </div>
+      <div class="setfld" data-for="key"><span>${t('set_key')}</span><input type="password" id="setKey" value="${esc(c.key)}" placeholder="sk-ant-…" autocomplete="off"></div>
+      <div class="setfld" data-for="relay"><span>${t('set_relay')}</span><input type="text" id="setRelay" value="${esc(c.relay)}" placeholder="https://wedo-tutor.example.workers.dev"></div>
+      <div class="setfld"><span>${t('set_model')}</span><select id="setModel"><option value="fast" ${c.model !== 'smart' ? 'selected' : ''}>${t('set_m_fast')}</option><option value="smart" ${c.model === 'smart' ? 'selected' : ''}>${t('set_m_smart')}</option></select></div>
+      <p class="setwarn">${t('set_warn')}</p><p class="muted">${t('set_relay_help')}</p>
+      <p id="setRes" class="muted"></p>
+      <div class="actions"><button class="btn" id="setTest">${t('set_test')}</button><button class="btn" data-close>${t('cancel')}</button><button class="btn primary" id="setSave">${t('set_save')}</button></div>`, (m) => {
+      const read = () => ({ mode: m.querySelector('[name=tmode]:checked').value, key: m.querySelector('#setKey').value.trim(), relay: m.querySelector('#setRelay').value.trim(), model: m.querySelector('#setModel').value });
+      const sync = () => { const v = read().mode; m.querySelectorAll('[data-for]').forEach((f) => { f.style.display = f.dataset.for === v ? '' : 'none'; }); };
+      m.querySelectorAll('[name=tmode]').forEach((r) => (r.onchange = sync)); sync();
+      m.querySelector('#setSave').onclick = () => { tutor.saveCfg(read()); closeModal(); renderTutor(); };
+      m.querySelector('#setTest').onclick = async () => {
+        const old = Object.assign({}, tutor.cfg), hist = tutor.chat;
+        tutor.cfg = Object.assign({}, old, read()); tutor.chat = [];
+        const res = m.querySelector('#setRes'); res.textContent = t('chat_thinking');
+        try { const a = await tutor.ask('Reply with just: OK'); res.textContent = `✅ ${t('set_ok')} (${a.slice(0, 40)})`; }
+        catch (e) { res.textContent = `⛔ ${t('chat_err')}: ${e.message}`; }
+        tutor.cfg = old; tutor.chat = hist;
+      };
+    });
+  };
+  // 블록을 누르면 설명이 따라오고, 코드가 바뀌면 점검·미션을 새로 고친다
+  let tutorT;
+  function tutorWatch(e) {
+    if (e.type === Blockly.Events.SELECTED) { selectedId = e.newElementId || selectedId; if (tmode === 'explain') renderTutor(); return; }
+    if (e.isUiEvent) return;
+    clearTimeout(tutorT); tutorT = setTimeout(() => { if (tmode === 'check' || tmode === 'missions') renderTutor(); }, 500);
+  }
+  hub.addEventListener('change', () => { if (tmode === 'check') { clearTimeout(tutorT); tutorT = setTimeout(renderTutor, 500); } });
+
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');
   function fmt(v) {
@@ -927,7 +1044,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
       const nm = $('#projName').value;
       ['proj_example', 'proj_new', 'proj_default'].forEach((k) => { if (I18N.all(k).includes(nm)) $('#projName').value = t(k); });
       createWorkspace(state);
-      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); renderLearn(); if (ltab === 'guide') setLTab('guide'); autosave();
+      refreshCode(); renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); renderLearn(); if (ltab === 'guide') setLTab('guide'); renderTutor(); autosave();
     }
   }
   langSel.onchange = () => { rt.stop('user'); setLanguage(langSel.value); };
@@ -940,8 +1057,8 @@ is_color_seen('red') / color_x('red') / color_size('red')
     if (saved && saved.workspace) loadProject(saved);
     else loadProject(example(), t('proj_example'));
   })();
-  renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead();
+  renderHub(); renderKeys(); renderVars(); renderCam(); renderCamRead(); renderTutor();
 
-  window.__wedo = { get ws() { return ws; }, hub, rt, genJS, genPython, setLanguage };
+  window.__wedo = { get ws() { return ws; }, hub, rt, genJS, genPython, setLanguage, tutor, currentProject };
   log(t('ready'), 'sys');
 })();
