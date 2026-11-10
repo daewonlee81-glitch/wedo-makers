@@ -19,6 +19,7 @@ rep = {
     "/*__I18N__*/": safe((R / "src/i18n.js").read_text(encoding="utf-8")),
     "/*__BLOCKS__*/": safe((R / "src/blocks.js").read_text(encoding="utf-8")),
     "/*__CAMERA__*/": safe((R / "src/camera.js").read_text(encoding="utf-8")),
+    "/*__BENCH__*/": safe((R / "src/tutor-bench.js").read_text(encoding="utf-8")),  # Robomakers_APP 와 같은 파일
     "/*__TUTOR__*/": safe((R / "src/tutor.js").read_text(encoding="utf-8")),
     "/*__HUB__*/": safe((R / "src/hub.js").read_text(encoding="utf-8")),
     "__LOGO__": "data:image/png;base64," + base64.b64encode((R / "assets/logo.png").read_bytes()).decode(),

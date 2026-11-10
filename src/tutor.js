@@ -79,10 +79,8 @@
     tt_loading: ['AI 불러오는 중…', 'Loading AI…', 'AIを読み込み中…', '正在加载 AI…', 'Cargando IA…'],
     tt_none: ['AI 엔진을 아직 설치하지 않았어요. 🔍 코드 점검의 규칙 검사는 AI 없이도 됩니다. 아래에서 엔진을 한 번 설치하면 인터넷 없이 질문할 수 있어요.', 'No AI engine installed yet. The rule checks in 🔍 Check code work without AI. Install an engine once below to ask questions offline.', 'AIエンジンがまだインストールされていません。🔍 コード点検のルールチェックはAIなしでも動きます。下でエンジンを一度インストールすると、オフラインで質問できます。', '还没有安装 AI 引擎。🔍 检查代码中的规则检查不需要 AI 也能用。在下面安装一次引擎后，就能离线提问。', 'Aún no hay un motor de IA instalado. Las revisiones automáticas de 🔍 Revisar código funcionan sin IA. Instala un motor una vez abajo para preguntar sin internet.'],
     tt_setup: ['⚙ AI 엔진 설치 · 선택', '⚙ Install · choose AI engine', '⚙ AIエンジンのインストール・選択', '⚙ 安装 · 选择 AI 引擎', '⚙ Instalar · elegir motor de IA'],
-    tt_webllm: ['오픈 AI 모델 (Qwen 코더) — 추천', 'Open AI model (Qwen Coder) — recommended', 'オープンAIモデル（Qwen Coder）— おすすめ', '开放 AI 模型（Qwen Coder）— 推荐', 'Modelo de IA abierto (Qwen Coder) — recomendado'],
+    tt_webllm: ['오픈 AI 모델 (Qwen)', 'Open AI model (Qwen)', 'オープンAIモデル（Qwen）', '开放 AI 模型（Qwen）', 'Modelo de IA abierto (Qwen)'],
     tt_webllm_d: ['모든 언어(한국어 포함). 처음 한 번 받으면 브라우저에 저장되어 인터넷 없이 씁니다. 그래픽(WebGPU)이 되는 Chrome·Edge 필요.', 'All languages. Downloaded once and stored in the browser, then works offline. Needs Chrome or Edge with WebGPU.', 'すべての言語に対応。一度ダウンロードするとブラウザに保存され、オフラインで使えます。WebGPU対応のChrome・Edgeが必要です。', '支持所有语言。下载一次后保存在浏览器中，之后离线可用。需要支持 WebGPU 的 Chrome 或 Edge。', 'Todos los idiomas. Se descarga una vez, se guarda en el navegador y luego funciona sin internet. Necesita Chrome o Edge con WebGPU.'],
-    tt_small: ['가벼운 모델 1.5B (약 1 GB)', 'Light model 1.5B (about 1 GB)', '軽量モデル 1.5B（約1 GB）', '轻量模型 1.5B（约 1 GB）', 'Modelo ligero 1.5B (unos 1 GB)'],
-    tt_large: ['똑똑한 모델 3B (약 2 GB)', 'Smarter model 3B (about 2 GB)', '賢いモデル 3B（約2 GB）', '更聪明的模型 3B（约 2 GB）', 'Modelo más listo 3B (unos 2 GB)'],
     tt_installed: ['설치됨', 'Installed', 'インストール済み', '已安装', 'Instalado'],
     tt_use: ['사용', 'Use', '使う', '使用', 'Usar'],
     tt_remove: ['지우기', 'Delete', '削除', '删除', 'Borrar'],
@@ -271,10 +269,7 @@ ${FACTS}`;
 
   /* ---------- 엔진 ---------- */
   const CHROME_LANGS = ['en', 'ja', 'es', 'de', 'fr'];
-  const MODELS = {
-    small: { f16: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', f32: 'Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC' },
-    large: { f16: 'Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC', f32: 'Qwen2.5-Coder-3B-Instruct-q4f32_1-MLC' }
-  };
+  const B = window.RMTutorBench; // 모델 목록 · 비교 시험 (Robomakers_APP 와 공용 tutor-bench.js)
   const WEBLLM = new URL('vendor/web-llm/index.js', location.href).href; // 같은 사이트에 올린 WebLLM 0.2.87
   const Chrome = {
     key: 'chrome',
@@ -311,7 +306,7 @@ ${FACTS}`;
       try { const a = await navigator.gpu.requestAdapter(); return a ? { f16: a.features.has('shader-f16') } : null; } catch (e) { return null; }
     },
     async lib() { this._lib = this._lib || (await import(WEBLLM)); return this._lib; },
-    async modelId(size) { const g = await this.gpu(); return g ? MODELS[size][g.f16 ? 'f16' : 'f32'] : null; },
+    async modelId(size) { const g = await this.gpu(); return g ? B.modelId(size, g.f16) : null; },
     async installed(size) {
       const id = await this.modelId(size); if (!id) return false;
       try { return await (await this.lib()).hasModelInCache(id); } catch (e) { return false; }
@@ -322,8 +317,9 @@ ${FACTS}`;
       if (this.engine && this.id === id) return;
       if (this.engine && this.engine.unload) this.engine.unload();
       this.engine = await lib.CreateMLCEngine(id, { initProgressCallback: (r) => progress(Math.round((r.progress || 0) * 100), r.text) });
-      this.id = id; this.lang = lang;
+      this.id = id; this.size = size; this.lang = lang;
     },
+    unload() { if (this.engine && this.engine.unload) this.engine.unload(); this.engine = null; this.id = null; },
     async remove(size) {
       const id = await this.modelId(size);
       if (id) await (await this.lib()).deleteModelAllInfoInCache(id);
@@ -332,11 +328,30 @@ ${FACTS}`;
     async *ask(user, lang) {
       const stream = await this.engine.chat.completions.create({
         messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: user }],
-        stream: true, temperature: 0.3, max_tokens: 450
+        stream: true, temperature: 0.3, max_tokens: 450, ...B.genOpts(this.size)
       });
       for await (const c of stream) yield (c.choices && c.choices[0] && c.choices[0].delta && c.choices[0].delta.content) || '';
     }
   };
+
+  // 모델 비교 시험 예제 (일부러 틀린 곳 하나씩 · expect = 짚어야 할 줄)
+  const BENCH_CASES = [
+    { title: '가까이 오면 멈추기 — 비교 방향이 반대', expect: [2],
+      question: 'The motor should stop when my hand comes close to the distance sensor, but it stops when my hand is far away. Check my block program.',
+      listing: `Hub: port 1: motor, port 2: distance sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 거리 센서 값이 > 20 이 될 때\n[L3]   포트 1 모터 끄기` },
+    { title: '모터가 멈추지 않음 — 끄기 블록이 없음', expect: [2, 3],
+      question: 'My motor never stops. I wanted it to run for 3 seconds. Which block should I change?',
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 3 초 기다리기\n[L4] 허브 불빛을 빨강 으로 켜기` },
+    { title: '변수를 정하지 않음', expect: [4, 2],
+      question: 'The motor does not get faster. Check my block program.',
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 무한 반복하기\n[L4]   포트 1 모터 파워를 (속도) % 로 정하기\n[L5]   속도 를 1 만큼 바꾸기\n\nNote: the variable "속도" is never set to a start value.` },
+    { title: '포트 착오 — 모터는 포트 2', expect: [2],
+      question: 'Nothing moves when I click Run. Why?',
+      listing: `Hub: port 1: distance sensor, port 2: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 2 초 동안 켜기\n[L3] 허브 불빛을 초록 으로 켜기` },
+    { title: '기울기 방향 착오', expect: [2],
+      question: 'The light should turn blue when I tilt the hub to the LEFT, but it happens when I tilt it right. Which block is wrong?',
+      listing: `Hub: port 1: tilt sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 허브가 오른쪽 으로 기울어질 때\n[L3]   허브 불빛을 파랑 으로 켜기` },
+  ];
   const QUESTION = {
     check: 'Check my block program for mistakes. Explain the most important problem first and which block to change.',
     error: 'My program stopped with the error shown below. Explain in simple words what it means and how to fix it.',
@@ -362,5 +377,5 @@ ${FACTS}`;
     }).join('');
   }
 
-  window.WeTutor = { Tutor, md, fill, blocksToText, Chrome, Open, QUESTION, tf, systemPrompt };
+  window.WeTutor = { Tutor, md, fill, blocksToText, Chrome, Open, QUESTION, tf, systemPrompt, BENCH_CASES };
 })();

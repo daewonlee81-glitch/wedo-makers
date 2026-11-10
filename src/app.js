@@ -830,9 +830,12 @@ is_color_seen('red') / color_x('red') / color_size('red')
     logs: () => [...document.querySelectorAll('#logs .log')].map((d) => d.textContent)
   });
   const { Chrome, Open, QUESTION, tf, blocksToText } = WeTutor;
+  const RB = window.RMTutorBench;
   const AI_STORE = 'wedomakers-tutor-ai';
-  let ai = { engine: '', size: 'small' };
+  let ai = { engine: '', size: 'rec' };
   try { ai = Object.assign(ai, JSON.parse(localStorage.getItem(AI_STORE) || '{}')); } catch (e) {}
+  ai.size = RB.key(ai.size); // 예전 이름 small/large → light/old
+  let lastInst = {};
   const keepAI = () => { try { localStorage.setItem(AI_STORE, JSON.stringify(ai)); } catch (e) {} };
   let active = null, aiBusy = false, lineMap = [];
   const chatLog = []; // { kind, html }
@@ -874,7 +877,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
   function renderStatus() {
     const st = $('#tutorSet');
     st.classList.toggle('online', !!active);
-    const name = active ? (active === Chrome ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')) : t('tt_off');
+    const name = active ? (active === Chrome ? t('tt_chrome') : RB.label(ai.size, I18N.lang)) : t('tt_off');
     $('#tutorState').textContent = active ? tf('tt_ready', name.replace(/\s*\(.*\)$/, '')) : t('tt_off');
   }
   function renderTutor() {
@@ -934,12 +937,15 @@ is_color_seen('red') / color_x('red') / color_size('red')
     const lang = I18N.lang;
     const chrome = await Chrome.state(lang);
     const gpu = await Open.gpu();
-    const sizes = gpu ? await Promise.all(['small', 'large'].map(async (k) => [k, await Open.installed(k)])) : [];
+    const inst = {};
+    if (gpu) for (const k of ['light', 'rec', 'pro', 'old']) inst[k] = await Open.installed(k);
+    lastInst = inst;
+    const sizes = gpu ? RB.rows(inst).map((k) => [k, inst[k]]) : [];
     if (!$('#ttSetup')) return;
     box.innerHTML = `${active ? '' : `<p class="tt-none">${t('tt_none')}</p>`}
       <details class="tt-eng" ${active ? '' : 'open'}><summary>${t('tt_setup')}</summary>
         <div class="tt-opt"><b>${t('tt_webllm')}</b><small>${t('tt_webllm_d')}</small>
-          ${gpu ? sizes.map(([k, ok]) => `<div class="tt-row"><span>${t(k === 'large' ? 'tt_large' : 'tt_small')}</span>
+          ${gpu ? sizes.map(([k, ok]) => `<div class="tt-row"><span>${esc(RB.label(k, I18N.lang))}${RB.desc(k, I18N.lang) ? `<small>${esc(RB.desc(k, I18N.lang))}</small>` : ''}</span>
             ${ok ? `<em>${t('tt_installed')}</em><button data-use="webllm:${k}">${t('tt_use')}</button><button data-rm="${k}" title="${t('tt_remove')}">🗑</button>`
               : `<button class="primary" data-use="webllm:${k}">${t('tt_install')}</button>`}</div>`).join('') : `<small class="tt-bad">${t('tt_nogpu')}</small>`}
         </div>
@@ -949,8 +955,10 @@ is_color_seen('red') / color_x('red') / color_size('red')
         </div>
         <div class="tt-prog" hidden><i></i><span></span></div>
         <small class="tt-net">${t('tt_needNet')}</small>
+        ${gpu || chrome.ok ? `<button class="tt-bench" data-bench="1">${esc(RB.text('bench', I18N.lang))}</button>` : ''}
       </details>`;
     box.onclick = async (e) => {
+      if (e.target.closest('[data-bench]')) return openBench();
       const use = e.target.closest('[data-use]') && e.target.closest('[data-use]').dataset.use;
       const rm = e.target.closest('[data-rm]') && e.target.closest('[data-rm]').dataset.rm;
       if (rm) { await Open.remove(rm); if (active === Open && ai.size === rm) active = null; renderStatus(); return renderSetup(); }
@@ -963,10 +971,37 @@ is_color_seen('red') / color_x('red') / color_size('red')
         if (use === 'chrome') { await Chrome.load(I18N.lang, bar); active = Chrome; ai.engine = 'chrome'; }
         else { ai.size = use.split(':')[1]; await Open.load(ai.size, I18N.lang, bar); active = Open; ai.engine = 'webllm'; }
         keepAI();
-        toast(tf('tt_ready', use === 'chrome' ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')));
+        toast(tf('tt_ready', use === 'chrome' ? t('tt_chrome') : RB.label(ai.size, I18N.lang)));
       } catch (err) { addMsg('err', esc(tf('tt_failed', err.message || err))); }
       finally { aiBusy = false; renderStatus(); renderSetup(); }
     };
+  }
+  // 🧪 모델 비교 시험 (선생님용 — Robomakers_APP 와 같은 화면)
+  async function openBench() {
+    const lang = I18N.lang;
+    const g = await Open.gpu();
+    const chrome = await Chrome.state(lang);
+    RB.open({
+      lang, cases: WeTutor.BENCH_CASES, systemPrompt: WeTutor.systemPrompt,
+      lib: () => Open.lib(), f16: !!(g && g.f16), installed: lastInst,
+      chrome: chrome.ok && chrome.installed ? {
+        ok: true, label: t('tt_chrome'),
+        ask: async function* (system, user) {
+          const s = await LanguageModel.create({ ...Chrome.opts(lang), initialPrompts: [{ role: 'system', content: system }] });
+          let prev = '';
+          for await (const chunk of s.promptStreaming(user)) {
+            const piece = chunk.startsWith(prev) && prev ? chunk.slice(prev.length) : chunk;
+            prev = chunk.startsWith(prev) ? chunk : prev + chunk;
+            yield piece;
+          }
+          if (s.destroy) s.destroy();
+        }
+      } : null,
+      before: () => { if (active === Open) active = null; Open.unload(); renderStatus(); },
+      after: () => restoreAI(),
+      onUse: (k) => { ai.size = k; ai.engine = 'webllm'; keepAI(); restoreAI(); },
+      toast
+    });
   }
   // 예전에 쓰던 엔진을 다시 불러오기 (설치돼 있을 때만 → 인터넷 없이)
   async function restoreAI() {
