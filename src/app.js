@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.5.0';
+  const VERSION = '1.6.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -406,7 +406,8 @@ is_color_seen('red') / color_x('red') / color_size('red')
     d.innerHTML = `<span class="t">${new Date().toTimeString().slice(0, 8)}</span>${esc(msg)}`;
     if (kind === 'err') {
       const a = document.createElement('button'); a.className = 'linkbtn'; a.textContent = t('report_btn'); a.onclick = openReport; d.appendChild(a);
-      const tb = document.createElement('button'); tb.className = 'linkbtn'; tb.textContent = '🤖 ' + t('tutor_tab'); tb.onclick = () => (tutor.online ? (showTutor('chat'), sendChat(t('chat_q_error'))) : showTutor('check')); d.appendChild(tb);
+      lastErr = String(msg).slice(0, 300);
+      const tb = document.createElement('button'); tb.className = 'linkbtn'; tb.textContent = '🤖 ' + t('tt_error'); tb.onclick = () => { showTab('tutorPane'); askAI('error'); }; d.appendChild(tb);
     }
     logs.appendChild(d);
     while (logs.children.length > 500) logs.firstChild.remove();
@@ -820,20 +821,27 @@ is_color_seen('red') / color_x('red') / color_size('red')
   cam.addEventListener('change', renderLearn);
   $('#btnLearn').onclick = () => { ensureDefaultClasses(); openLearn(); };
 
-  /* ---------- AI 튜터 ---------- */
+  /* ---------- AI 튜터 (점검·설명·미션은 AI 없이, 질문은 이 컴퓨터 안의 AI 로) ---------- */
+  let lastErr = '';
   const tutor = new WeTutor.Tutor({
     ws: () => ws, hub, cam, rt,
     pySrc: () => pySrc,
+    lastError: () => lastErr,
     logs: () => [...document.querySelectorAll('#logs .log')].map((d) => d.textContent)
   });
-  let tmode = 'check', selectedId = null, chatBusy = false;
+  const { Chrome, Open, QUESTION, tf, blocksToText } = WeTutor;
+  const AI_STORE = 'wedomakers-tutor-ai';
+  let ai = { engine: '', size: 'small' };
+  try { ai = Object.assign(ai, JSON.parse(localStorage.getItem(AI_STORE) || '{}')); } catch (e) {}
+  const keepAI = () => { try { localStorage.setItem(AI_STORE, JSON.stringify(ai)); } catch (e) {} };
+  let active = null, aiBusy = false, lineMap = [];
+  const chatLog = []; // { kind, html }
+  let tmode = 'check', selectedId = null;
   const mres = {}; // 미션 확인 결과 (다시 그려도 남도록)
   const tbody = $('#tutorBody');
   const bot = (html) => `<div class="tmsg"><div class="av">🤖</div><div class="bub">${html}</div></div>`;
-  function showTutor(mode) {
-    showTab('tutorPane');
-    if (mode) setTMode(mode); else renderTutor();
-  }
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  function showTutor(mode) { showTab('tutorPane'); if (mode) setTMode(mode); else renderTutor(); }
   function setTMode(m) {
     tmode = m;
     document.querySelectorAll('[data-tmode]').forEach((b) => b.classList.toggle('on', b.dataset.tmode === m));
@@ -842,16 +850,43 @@ is_color_seen('red') / color_x('red') / color_size('red')
   }
   document.querySelectorAll('[data-tmode]').forEach((b) => (b.onclick = () => setTMode(b.dataset.tmode)));
   const ICON = { err: '⛔', warn: '⚠️', tip: '💡', ok: '✅' };
-  function renderTutor() {
+
+  // 블록 강조 (AI 답의 [L4] 를 누르면)
+  let glowT = 0;
+  function glow(ids) {
+    clearTimeout(glowT);
+    ws.getAllBlocks(false).forEach((b) => b.getSvgRoot() && b.getSvgRoot().classList.remove('wm-glow'));
+    const bs = ids.map((id) => ws.getBlockById(id)).filter(Boolean);
+    bs.forEach((b) => b.getSvgRoot().classList.add('wm-glow'));
+    if (bs[0]) ws.centerOnBlock(bs[0].id);
+    glowT = setTimeout(() => bs.forEach((b) => b.getSvgRoot() && b.getSvgRoot().classList.remove('wm-glow')), 8000);
+  }
+  const linkify = (src) => WeTutor.md(src).replace(/\[L(\d+)(?:\s*[-–~]\s*L?(\d+))?\]/g, (m, x, y) => {
+    const from = +x, to = +(y || x);
+    const ids = lineMap.filter((l) => l.n >= from && l.n <= to).map((l) => l.id);
+    return ids.length ? `<a href="#" class="tt-ln" data-ids="${ids.join(',')}">${y ? `${x}–${y}` : x}</a>` : m;
+  });
+  tbody.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-ids]'); if (!a) return;
+    e.preventDefault(); glow(a.dataset.ids.split(',').filter(Boolean));
+  });
+
+  function renderStatus() {
     const st = $('#tutorSet');
-    st.classList.toggle('online', !!tutor.online);
-    $('#tutorState').textContent = tutor.online ? t('set_on') : t('set_off');
+    st.classList.toggle('online', !!active);
+    const name = active ? (active === Chrome ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')) : t('tt_off');
+    $('#tutorState').textContent = active ? tf('tt_ready', name.replace(/\s*\(.*\)$/, '')) : t('tt_off');
+  }
+  function renderTutor() {
+    renderStatus();
     if (!$('#tutorPane').classList.contains('on')) return;
     if (tmode === 'check') {
       const items = tutor.check();
-      tbody.innerHTML = bot(t('tutor_hello')) + items.map((it, i) => `<div class="chk ${it.lv}"><span class="ic">${ICON[it.lv]}</span><div>${it.html}${it.id ? ` <button class="linkbtn" data-show="${it.id}">${t('tutor_show')}</button>` : ''}${it.action === 'learn' ? ` <button class="linkbtn" data-learn>${t('tutor_open_learn')}</button>` : ''}</div></div>`).join('');
-      tbody.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { const bl = ws.getBlockById(b.dataset.show); if (bl) { ws.centerOnBlock(bl.id); bl.select(); } }));
+      tbody.innerHTML = bot(t('tutor_hello')) + items.map((it) => `<div class="chk ${it.lv}"><span class="ic">${ICON[it.lv]}</span><div>${it.html}${it.id ? ` <button class="linkbtn" data-show="${it.id}">${t('tutor_show')}</button>` : ''}${it.action === 'learn' ? ` <button class="linkbtn" data-learn>${t('tutor_open_learn')}</button>` : ''}</div></div>`).join('') +
+        (lastErr ? `<div class="chk err"><span class="ic">⛔</span><div>${esc(tf('tt_lastError', lastErr))} <button class="linkbtn" data-askerr>${t('tt_error')}</button></div></div>` : '');
+      tbody.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { const bl = ws.getBlockById(b.dataset.show); if (bl) { glow([bl.id]); bl.select(); } }));
       tbody.querySelectorAll('[data-learn]').forEach((b) => (b.onclick = () => { ensureDefaultClasses(); openLearn('obj'); }));
+      tbody.querySelectorAll('[data-askerr]').forEach((b) => (b.onclick = () => { setTMode('chat'); askAI('error'); }));
     } else if (tmode === 'explain') {
       const bl = selectedId && ws.getBlockById(selectedId);
       const x = bl && tutor.explain(bl);
@@ -872,59 +907,109 @@ is_color_seen('red') / color_x('red') / color_size('red')
         box.querySelector('.res').textContent = ok ? t('m_done') : t('m_not_yet');
         if (!ok) box.querySelector('details').open = true;
       }));
-    } else {
-      $('#chatChips').innerHTML = ['chat_ask_code', 'chat_ask_error', 'chat_ask_idea'].map((k, i) => `<button data-q="${['chat_q_code', 'chat_q_error', 'chat_q_idea'][i]}">${t(k)}</button>`).join('') +
-        (tutor.chat.length ? `<button data-clearchat>${t('chat_clear')}</button>` : '');
-      $('#chatChips').querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => sendChat(t(b.dataset.q))));
-      const cc = $('#chatChips').querySelector('[data-clearchat]'); if (cc) cc.onclick = () => { tutor.chat = []; renderTutor(); };
-      $('#chatIn').placeholder = t('chat_ph');
-      const msgs = tutor.chat.map((m) => m.role === 'user' ? `<div class="tmsg me"><div class="av">🙂</div><div class="bub">${esc(m.text)}</div></div>` : bot(WeTutor.md(m.text))).join('');
-      tbody.innerHTML = (tutor.online ? bot(t('tutor_hello')) : bot(t('chat_off'))) + msgs + (chatBusy ? bot(`<i>${t('chat_thinking')}</i>`) : '');
-      tbody.scrollTop = tbody.scrollHeight;
+    } else renderChat();
+  }
+
+  // ---- AI 에게 묻기 화면 ----
+  function renderChat() {
+    tbody.innerHTML = `<div class="tt-setup" id="ttSetup"></div>
+      <div class="tt-actions"><button data-q="check">${t('tt_check')}</button><button data-q="error">${t('tt_error')}</button><button data-q="hint">${t('tt_hint')}</button></div>
+      <div class="tt-log" id="ttLog">${chatLog.map((m) => `<div class="tt-msg ${m.kind}">${m.html}</div>`).join('')}</div>
+      <p class="tt-note">${t('tt_privacy')}</p>`;
+    tbody.querySelector('.tt-actions').onclick = (e) => { const q = e.target.closest('[data-q]'); if (q) askAI(q.dataset.q); };
+    $('#chatIn').placeholder = t('tt_ask');
+    $('#chatSend').textContent = t('tt_send');
+    renderSetup();
+    tbody.scrollTop = tbody.scrollHeight;
+  }
+  function addMsg(kind, html) {
+    chatLog.push({ kind, html });
+    const log = $('#ttLog'); if (!log) return null;
+    const d = document.createElement('div'); d.className = 'tt-msg ' + kind; d.innerHTML = html; log.appendChild(d);
+    tbody.scrollTop = tbody.scrollHeight;
+    return { el: d, rec: chatLog[chatLog.length - 1] };
+  }
+  async function renderSetup() {
+    const box = $('#ttSetup'); if (!box) return;
+    const lang = I18N.lang;
+    const chrome = await Chrome.state(lang);
+    const gpu = await Open.gpu();
+    const sizes = gpu ? await Promise.all(['small', 'large'].map(async (k) => [k, await Open.installed(k)])) : [];
+    if (!$('#ttSetup')) return;
+    box.innerHTML = `${active ? '' : `<p class="tt-none">${t('tt_none')}</p>`}
+      <details class="tt-eng" ${active ? '' : 'open'}><summary>${t('tt_setup')}</summary>
+        <div class="tt-opt"><b>${t('tt_webllm')}</b><small>${t('tt_webllm_d')}</small>
+          ${gpu ? sizes.map(([k, ok]) => `<div class="tt-row"><span>${t(k === 'large' ? 'tt_large' : 'tt_small')}</span>
+            ${ok ? `<em>${t('tt_installed')}</em><button data-use="webllm:${k}">${t('tt_use')}</button><button data-rm="${k}" title="${t('tt_remove')}">🗑</button>`
+              : `<button class="primary" data-use="webllm:${k}">${t('tt_install')}</button>`}</div>`).join('') : `<small class="tt-bad">${t('tt_nogpu')}</small>`}
+        </div>
+        <div class="tt-opt"><b>${t('tt_chrome')}</b><small>${t('tt_chrome_d')}</small>
+          ${chrome.ok ? `<div class="tt-row"><span>Gemini Nano</span>${chrome.installed ? `<em>${t('tt_installed')}</em>` : ''}
+            <button class="${chrome.installed ? '' : 'primary'}" data-use="chrome">${t(chrome.installed ? 'tt_use' : 'tt_install')}</button></div>` : `<small class="tt-bad">${t(chrome.why)}</small>`}
+        </div>
+        <div class="tt-prog" hidden><i></i><span></span></div>
+        <small class="tt-net">${t('tt_needNet')}</small>
+      </details>`;
+    box.onclick = async (e) => {
+      const use = e.target.closest('[data-use]') && e.target.closest('[data-use]').dataset.use;
+      const rm = e.target.closest('[data-rm]') && e.target.closest('[data-rm]').dataset.rm;
+      if (rm) { await Open.remove(rm); if (active === Open && ai.size === rm) active = null; renderStatus(); return renderSetup(); }
+      if (!use || aiBusy) return;
+      const prog = box.querySelector('.tt-prog');
+      const bar = (pc, txt) => { prog.hidden = false; prog.querySelector('i').style.width = pc + '%'; prog.querySelector('span').textContent = tf('tt_installing', pc) + (txt ? ' · ' + String(txt).slice(0, 60) : ''); };
+      aiBusy = true;
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); // 큰 모델 파일을 지우지 않도록
+      try {
+        if (use === 'chrome') { await Chrome.load(I18N.lang, bar); active = Chrome; ai.engine = 'chrome'; }
+        else { ai.size = use.split(':')[1]; await Open.load(ai.size, I18N.lang, bar); active = Open; ai.engine = 'webllm'; }
+        keepAI();
+        toast(tf('tt_ready', use === 'chrome' ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')));
+      } catch (err) { addMsg('err', esc(tf('tt_failed', err.message || err))); }
+      finally { aiBusy = false; renderStatus(); renderSetup(); }
+    };
+  }
+  // 예전에 쓰던 엔진을 다시 불러오기 (설치돼 있을 때만 → 인터넷 없이)
+  async function restoreAI() {
+    try {
+      if (ai.engine === 'webllm' && (await Open.installed(ai.size))) { $('#tutorState').textContent = t('tt_loading'); await Open.load(ai.size, I18N.lang, () => {}); active = Open; }
+      else if (ai.engine === 'chrome' && (await Chrome.state(I18N.lang)).installed) { await Chrome.load(I18N.lang, () => {}); active = Chrome; }
+    } catch (e) { active = null; }
+    renderStatus();
+    if (tmode === 'chat') renderSetup();
+  }
+  async function askAI(kind, free) {
+    if (aiBusy) return;
+    if (tmode !== 'chat') setTMode('chat');
+    const rulesItems = tutor.check().filter((r) => r.lv !== 'ok');
+    lineMap = blocksToText(ws).lines;
+    addMsg('me', esc(kind ? t('tt_' + kind) : free));
+    if (kind === 'check' || kind === 'error') {
+      if (kind === 'error' && !lastErr) { addMsg('rule', esc(t('tt_noError'))); return; }
+      const shown = kind === 'error' ? [{ lv: 'err', html: esc(tf('tt_lastError', lastErr)) }] : rulesItems;
+      addMsg('rule', `<b>${t('tt_rules')}</b><br>` + (shown.length ? shown.map((r) => `<a href="#" class="tt-rule lv-${r.lv}" data-ids="${r.id || ''}">${ICON[r.lv]} ${plain(r.html)}</a>`).join('<br>') : esc(t('tt_noIssue'))));
     }
+    if (!active) { if (!kind || kind === 'hint') addMsg('sys', esc(t('tt_none'))); return; }
+    aiBusy = true;
+    const out = addMsg('ai', `<span class="tt-dots">${t('tt_thinking')}</span>`);
+    let txt = '';
+    try {
+      const user = `${kind ? QUESTION[kind] : 'Question: ' + free}\n\n${tutor.context(rulesItems.map((r) => plain(r.html)))}`;
+      for await (const piece of active.ask(user, I18N.lang)) {
+        txt += piece;
+        const clean = txt.replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trim(); // Qwen 의 생각 표시는 숨김
+        out.rec.html = linkify(clean) || `<span class="tt-dots">${t('tt_thinking')}</span>`;
+        if (out.el.isConnected) out.el.innerHTML = out.rec.html;
+        tbody.scrollTop = tbody.scrollHeight;
+      }
+    } catch (err) {
+      out.rec.html = esc(tf('tt_failed', err.message || err)); out.rec.kind = 'err';
+      if (out.el.isConnected) { out.el.innerHTML = out.rec.html; out.el.classList.add('err'); }
+    } finally { aiBusy = false; }
   }
-  async function sendChat(q) {
-    q = (q || '').trim(); if (!q || chatBusy) return;
-    if (!tutor.online) { renderTutor(); return; }
-    chatBusy = true;
-    tutor.chat.push({ role: 'user', text: q, pending: true });
-    renderTutor();
-    tutor.chat.pop();
-    try { await tutor.ask(q); }
-    catch (e) { tutor.chat.push({ role: 'user', text: q }, { role: 'assistant', text: `⚠ ${t('chat_err')}: ${e.message}` }); }
-    chatBusy = false; renderTutor();
-  }
-  $('#chatSend').onclick = () => { const v = $('#chatIn').value; $('#chatIn').value = ''; sendChat(v); };
+  $('#chatSend').onclick = () => { const v = $('#chatIn').value.trim(); if (!v) return; $('#chatIn').value = ''; askAI(null, v); };
   $('#chatIn').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatSend').click(); } });
   $('#btnTutor').onclick = () => showTutor();
-  $('#tutorSet').onclick = () => {
-    const c = tutor.cfg;
-    openModal(`<h3>${t('set_title')}</h3><p>${t('set_desc')}</p>
-      <div class="setopt">
-        <label><input type="radio" name="tmode" value="off" ${c.mode === 'off' ? 'checked' : ''}> ${t('set_mode_off')}</label>
-        <label><input type="radio" name="tmode" value="key" ${c.mode === 'key' ? 'checked' : ''}> ${t('set_mode_key')}</label>
-        <label><input type="radio" name="tmode" value="relay" ${c.mode === 'relay' ? 'checked' : ''}> ${t('set_mode_relay')}</label>
-      </div>
-      <div class="setfld" data-for="key"><span>${t('set_key')}</span><input type="password" id="setKey" value="${esc(c.key)}" placeholder="sk-ant-…" autocomplete="off"></div>
-      <div class="setfld" data-for="relay"><span>${t('set_relay')}</span><input type="text" id="setRelay" value="${esc(c.relay)}" placeholder="https://wedo-tutor.example.workers.dev"></div>
-      <div class="setfld"><span>${t('set_model')}</span><select id="setModel"><option value="fast" ${c.model !== 'smart' ? 'selected' : ''}>${t('set_m_fast')}</option><option value="smart" ${c.model === 'smart' ? 'selected' : ''}>${t('set_m_smart')}</option></select></div>
-      <p class="setwarn">${t('set_warn')}</p><p class="muted">${t('set_relay_help')}</p>
-      <p id="setRes" class="muted"></p>
-      <div class="actions"><button class="btn" id="setTest">${t('set_test')}</button><button class="btn" data-close>${t('cancel')}</button><button class="btn primary" id="setSave">${t('set_save')}</button></div>`, (m) => {
-      const read = () => ({ mode: m.querySelector('[name=tmode]:checked').value, key: m.querySelector('#setKey').value.trim(), relay: m.querySelector('#setRelay').value.trim(), model: m.querySelector('#setModel').value });
-      const sync = () => { const v = read().mode; m.querySelectorAll('[data-for]').forEach((f) => { f.style.display = f.dataset.for === v ? '' : 'none'; }); };
-      m.querySelectorAll('[name=tmode]').forEach((r) => (r.onchange = sync)); sync();
-      m.querySelector('#setSave').onclick = () => { tutor.saveCfg(read()); closeModal(); renderTutor(); };
-      m.querySelector('#setTest').onclick = async () => {
-        const old = Object.assign({}, tutor.cfg), hist = tutor.chat;
-        tutor.cfg = Object.assign({}, old, read()); tutor.chat = [];
-        const res = m.querySelector('#setRes'); res.textContent = t('chat_thinking');
-        try { const a = await tutor.ask('Reply with just: OK'); res.textContent = `✅ ${t('set_ok')} (${a.slice(0, 40)})`; }
-        catch (e) { res.textContent = `⛔ ${t('chat_err')}: ${e.message}`; }
-        tutor.cfg = old; tutor.chat = hist;
-      };
-    });
-  };
+  $('#tutorSet').onclick = () => showTutor('chat');
   // 블록을 누르면 설명이 따라오고, 코드가 바뀌면 점검·미션을 새로 고친다
   let tutorT;
   function tutorWatch(e) {
@@ -933,6 +1018,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     clearTimeout(tutorT); tutorT = setTimeout(() => { if (tmode === 'check' || tmode === 'missions') renderTutor(); }, 500);
   }
   hub.addEventListener('change', () => { if (tmode === 'check') { clearTimeout(tutorT); tutorT = setTimeout(renderTutor, 500); } });
+  if (ai.engine) setTimeout(restoreAI, 800);
 
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');

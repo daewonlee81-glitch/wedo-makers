@@ -40,6 +40,11 @@ shutil.copy(MP / "vision_bundle.mjs", vend / "vision_bundle.mjs")
 for f in ["vision_wasm_internal.js", "vision_wasm_internal.wasm"]:
     shutil.copy(MP / "wasm" / f, vend / "wasm" / f)
 (vend / "LICENSE.txt").write_text("MediaPipe Tasks Vision — Apache License 2.0 — https://github.com/google-ai-edge/mediapipe\n", encoding="utf-8")
+# AI 튜터: WebLLM (이 컴퓨터 안에서 도는 AI, Apache 2.0)
+(out / "vendor/web-llm").mkdir(parents=True, exist_ok=True)
+if (R / "vendor/web-llm").resolve() != (out / "vendor/web-llm").resolve():
+    for f in ["index.js", "LICENSE", "README.txt"]:
+        shutil.copy(R / "vendor/web-llm" / f, out / "vendor/web-llm" / f)
 if (R / "models").resolve() != (out / "models").resolve():
     shutil.copytree(R / "models", out / "models", dirs_exist_ok=True)
 print("ok", len(src) // 1024, "KB")

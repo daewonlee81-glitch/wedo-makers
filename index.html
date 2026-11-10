@@ -198,6 +198,44 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .setfld{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin:6px 0}
 .setfld input,.setfld select{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font:inherit}
 .setwarn{background:#fffaf0;border:1px solid #f8dfb0;border-radius:9px;padding:8px 10px;font-size:13px;color:#7a4b00}
+/* AI 튜터 — 이 컴퓨터 안의 AI (Robomakers_APP 와 같은 화면 구성) */
+.wm-glow > .blocklyPath{stroke:#FFC400 !important;stroke-width:4px !important;filter:drop-shadow(0 0 6px rgba(255,196,0,.9));animation:wmGlow 1s ease-in-out infinite alternate}
+@keyframes wmGlow{from{opacity:1}to{opacity:.75}}
+.tt-setup{margin-bottom:6px}
+.tt-none{margin:0 0 6px;font-size:13px;color:var(--ink2)}
+.tt-eng{border:1px solid var(--line);border-radius:10px;background:#fff}
+.tt-eng summary{cursor:pointer;padding:7px 10px;font-weight:700;font-size:13px}
+.tt-opt{padding:6px 10px 8px;border-top:1px dashed var(--line)}
+.tt-opt > b{display:block;font-size:13px}
+.tt-opt > small{display:block;color:var(--ink2);font-size:11.5px;line-height:1.45;margin:2px 0 4px}
+.tt-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13px}
+.tt-row span{flex:1}
+.tt-row em{font-style:normal;font-size:11.5px;color:var(--ok);font-weight:700}
+.tt-row button,.tt-actions button{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#fff;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink)}
+.tt-row button.primary{background:#6B3FC2;border-color:#6B3FC2;color:#fff}
+.tt-bad{color:#A15C00 !important}
+.tt-net{display:block;padding:0 10px 8px;color:var(--ink2);font-size:11.5px}
+.tt-prog{margin:6px 10px 8px;height:22px;border-radius:6px;background:#EFE9FB;position:relative;overflow:hidden}
+.tt-prog i{position:absolute;inset:0 auto 0 0;background:#B89AF0;transition:width .3s}
+.tt-prog span{position:relative;font-size:11px;line-height:22px;padding:0 8px;white-space:nowrap}
+.tt-actions{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap}
+.tt-actions button{flex:1 1 auto}
+.tt-log{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.tt-msg{border-radius:12px;padding:8px 11px;line-height:1.55;font-size:13.5px;max-width:94%;word-break:break-word}
+.tt-msg p{margin:0 0 4px}.tt-msg p:last-child{margin:0}.tt-msg ul{margin:4px 0;padding-left:18px}
+.tt-msg pre{background:var(--code-bg);color:var(--code-ink);padding:6px 9px;border-radius:8px;overflow:auto;font:12px/1.5 "JetBrains Mono",monospace}
+.tt-msg.me{align-self:flex-end;background:#6B3FC2;color:#fff}
+.tt-msg.ai{align-self:flex-start;background:#F4F0FC}
+.tt-msg.rule{align-self:flex-start;background:#F4F6FA;border:1px solid var(--line)}
+.tt-msg.sys{align-self:center;color:var(--ink2);font-size:12.5px;background:none;text-align:center}
+.tt-msg.err{background:#FDECEC;color:#9A1C20}
+.tt-ln{display:inline-block;min-width:22px;padding:0 5px;border-radius:6px;background:#FFE58A;color:#5A4300;font-weight:800;font-size:12px;text-decoration:none;text-align:center}
+.tt-ln::before{content:'L';opacity:.6}
+.tt-rule{color:inherit;text-decoration:none;display:inline-block;padding:1px 0}
+.tt-rule:hover{text-decoration:underline}
+.tt-rule.lv-err{color:#9A1C20}
+.tt-dots{color:var(--ink2);animation:wmGlow 1s ease-in-out infinite alternate}
+.tt-note{font-size:11.5px;color:var(--ink2);margin:6px 0 0}
 /* 언어 선택 */
 #langSel{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font:inherit;font-weight:600;color:var(--ink)}
 .linkbtn{border:0;background:none;color:var(--brand);text-decoration:underline;margin-left:8px;font:inherit;font-size:12px;padding:0}
@@ -419,8 +457,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
           </div>
           <div class="tutor-body" id="tutorBody"></div>
           <div class="tutor-input" id="tutorInput" hidden>
-            <div class="chips" id="chatChips"></div>
-            <div class="row"><textarea id="chatIn" rows="2"></textarea><button class="btn primary" id="chatSend" data-i18n="chat_send">보내기</button></div>
+            <div class="row"><textarea id="chatIn" rows="2" maxlength="300"></textarea><button class="btn primary" id="chatSend" data-i18n="tt_send">묻기</button></div>
           </div>
         </div>
         <div class="pane" id="consolePane">
@@ -6794,8 +6831,7 @@ return Blockly.Msg;
     tutor_check: ['🔍 내 코드 점검', '🔍 Check my code', '🔍 コードを点検', '🔍 检查我的代码', '🔍 Revisar mi código'],
     tutor_explain: ['💡 블록 설명', '💡 Explain block', '💡 ブロック説明', '💡 积木说明', '💡 Explicar bloque'],
     tutor_missions: ['🎯 미션', '🎯 Missions', '🎯 ミッション', '🎯 任务', '🎯 Misiones'],
-    tutor_chat: ['💬 질문하기', '💬 Ask', '💬 質問する', '💬 提问', '💬 Preguntar'],
-    tutor_settings: ['⚙ AI 연결', '⚙ AI connection', '⚙ AI 接続', '⚙ AI 连接', '⚙ Conexión IA'],
+    tutor_chat: ['🤖 AI에게 묻기', '🤖 Ask the AI', '🤖 AI に聞く', '🤖 问 AI', '🤖 Preguntar a la IA'],
     tutor_hello: ['안녕하세요! 저는 위두 메이커스 AI 튜터예요. 코드를 점검하거나, 블록을 눌러 설명을 듣거나, 미션에 도전해 보세요.', 'Hi! I am the WeDo Makers AI tutor. I can check your code, explain a block you click, or give you missions.', 'こんにちは！WeDo Makers の AI チューターです。コードの点検、ブロックの説明、ミッションをお手伝いします。', '你好！我是 WeDo 创客 AI 导师。我可以检查代码、解释你点击的积木，或给你任务挑战。', '¡Hola! Soy el tutor IA de WeDo Makers. Puedo revisar tu código, explicar el bloque que pulses o darte misiones.'],
     tutor_ok: ['문제를 찾지 못했어요 👍 실행해서 로봇이 생각대로 움직이는지 확인해 보세요.', 'No problems found 👍 Run it and check the robot moves as you planned.', '問題は見つかりませんでした 👍 実行してロボットが思い通りに動くか確かめよう。', '没有发现问题 👍 运行一下，看看机器人是否按你的想法移动。', 'No encontré problemas 👍 Ejecútalo y mira si el robot se mueve como pensabas.'],
     tutor_show: ['블록 보기', 'Show block', 'ブロックを見る', '查看积木', 'Ver bloque'],
@@ -6853,37 +6889,39 @@ return Blockly.Msg;
     m6_t: ['6. 내가 가르친 사물 (AI 학습)', '6. My own object (AI learning)', '6. 自分で教えた物（AI 学習）', '6. 我教的物体（AI 学习）', '6. Mi propio objeto (IA)'],
     m6_g: ['물건 하나를 AI에게 가르치고, 그 물건을 보여 주면 <b>소리</b>가 나게 하세요.', 'Teach the AI one object and make a <b>sound</b> play when you show it.', '物をひとつ AI に教えて、それを見せると<b>音</b>が鳴るようにしよう。', '教 AI 认识一个物体，展示它时发出<b>声音</b>。', 'Enseña un objeto a la IA y haz que suene un <b>sonido</b> al mostrarlo.'],
     m6_h: ['AI 카메라 → <b>🧠 AI 학습하기</b>로 학습 · 이벤트 → <b>○ 이 될 때</b> + <b>학습한 사물이 ○ 인가?</b> · 소리 블록', 'AI Camera → <b>🧠 Teach the AI</b> · Events → <b>when ○</b> + <b>learned object is ○?</b> · a sound block', 'AI カメラ → <b>🧠 AI に教える</b> ・ イベント → <b>○ になったとき</b> + <b>学習した物が ○？</b> ・ 音ブロック', 'AI 摄像头 → <b>🧠 训练 AI</b> · 事件 → <b>当 ○</b> + <b>学习的物体是 ○？</b> · 声音积木', 'Cámara IA → <b>🧠 Enseñar a la IA</b> · Eventos → <b>cuando ○</b> + <b>¿objeto aprendido es ○?</b> · un bloque de sonido'],
-    // 채팅
-    chat_ph: ['로봇이나 코드에 대해 물어보세요… (Enter 보내기)', 'Ask about your robot or code… (Enter to send)', 'ロボットやコードについて質問しよう…（Enter で送信）', '问问机器人或代码的问题…（Enter 发送）', 'Pregunta sobre tu robot o código… (Enter para enviar)'],
-    chat_send: ['보내기', 'Send', '送信', '发送', 'Enviar'],
-    chat_thinking: ['생각하는 중…', 'Thinking…', '考え中…', '思考中…', 'Pensando…'],
-    chat_off: ['자유 질문은 <b>AI 연결</b>을 켜야 쓸 수 있어요. 선생님께 부탁하세요. 그동안 <b>코드 점검 · 블록 설명 · 미션</b>은 언제든 쓸 수 있어요.', 'Free questions need the <b>AI connection</b> — ask your teacher to set it up. <b>Check code · Explain · Missions</b> always work.', '自由な質問には<b>AI 接続</b>が必要です。先生にたのもう。<b>点検・説明・ミッション</b>はいつでも使えます。', '自由提问需要开启 <b>AI 连接</b>，请老师设置。<b>检查代码 · 积木说明 · 任务</b>随时可用。', 'Las preguntas libres necesitan la <b>conexión IA</b>; pide a tu profe que la active. <b>Revisar · Explicar · Misiones</b> siempre funcionan.'],
-    chat_err: ['AI에 연결하지 못했어요', 'Could not reach the AI', 'AI に接続できませんでした', '无法连接 AI', 'No se pudo conectar con la IA'],
-    chat_clear: ['대화 지우기', 'Clear chat', '会話を消す', '清除对话', 'Borrar chat'],
-    chat_ask_code: ['내 코드 봐 줘', 'Look at my code', 'コードを見て', '帮我看看代码', 'Mira mi código'],
-    chat_ask_error: ['오류가 났어요', 'I got an error', 'エラーが出た', '出错了', 'Me salió un error'],
-    chat_ask_idea: ['만들기 아이디어', 'Project idea', '作品のアイデア', '作品创意', 'Idea de proyecto'],
-    chat_q_code: ['지금 내 코드를 보고, 잘한 점 하나와 고치면 좋을 점 하나를 알려 줘.', 'Look at my current code and tell me one good thing and one thing to improve.', 'いまのコードを見て、よいところとなおすとよいところをひとつずつ教えて。', '看看我现在的代码，告诉我一个优点和一个可以改进的地方。', 'Mira mi código y dime una cosa buena y una para mejorar.'],
-    chat_q_error: ['콘솔에 나온 오류가 무슨 뜻인지, 어떻게 고치면 되는지 알려 줘.', 'What does the error in the console mean and how can I fix it?', 'コンソールのエラーの意味と、なおし方を教えて。', '控制台里的错误是什么意思？怎么改？', '¿Qué significa el error de la consola y cómo lo arreglo?'],
-    chat_q_idea: ['지금 쓸 수 있는 센서와 블록으로 만들 수 있는 재미있는 로봇 아이디어를 하나 알려 줘.', 'Give me one fun robot idea I can build with the sensors and blocks I have now.', 'いま使えるセンサーとブロックで作れる楽しいロボットのアイデアをひとつ教えて。', '用我现在能用的传感器和积木，给我一个有趣的机器人创意。', 'Dame una idea divertida de robot con los sensores y bloques que tengo.'],
-    // 설정
-    set_title: ['AI 튜터 연결 설정 (선생님용)', 'AI tutor connection (for teachers)', 'AI チューター接続設定（先生用）', 'AI 导师连接设置（教师用）', 'Conexión del tutor IA (para docentes)'],
-    set_desc: ['코드 점검·블록 설명·미션은 인터넷 없이 항상 동작합니다. 학생이 <b>자유롭게 질문</b>하게 하려면 Claude에 연결하세요.', 'Code check, explanations and missions always work offline. Connect Claude to let students <b>ask free questions</b>.', '点検・説明・ミッションはオフラインでも常に動きます。生徒が<b>自由に質問</b>できるようにするには Claude に接続します。', '代码检查、积木说明和任务离线也能用。若要让学生<b>自由提问</b>，请连接 Claude。', 'Revisar, explicar y misiones funcionan sin internet. Conecta Claude para que el alumnado <b>pregunte libremente</b>.'],
-    set_mode_off: ['연결 안 함 (내장 튜터만)', 'Off (built-in tutor only)', '接続しない（内蔵チューターのみ）', '不连接（仅内置导师）', 'Desactivado (solo tutor integrado)'],
-    set_mode_key: ['Claude API 키 (이 PC에서만)', 'Claude API key (this PC only)', 'Claude API キー（この PC のみ）', 'Claude API 密钥（仅本机）', 'Clave API de Claude (solo este PC)'],
-    set_mode_relay: ['중계 서버 주소 (교실 전체 추천)', 'Relay server URL (recommended for classes)', '中継サーバー（クラス全体におすすめ）', '中转服务器地址（推荐全班使用）', 'URL de servidor intermedio (recomendado en clase)'],
-    set_key: ['API 키', 'API key', 'API キー', 'API 密钥', 'Clave API'],
-    set_relay: ['중계 서버 주소', 'Relay URL', '中継サーバー URL', '中转服务器地址', 'URL del servidor'],
-    set_model: ['모델', 'Model', 'モデル', '模型', 'Modelo'],
-    set_m_fast: ['빠르고 저렴 (Haiku)', 'Fast & low cost (Haiku)', '速くて安い（Haiku）', '快速低价（Haiku）', 'Rápido y barato (Haiku)'],
-    set_m_smart: ['더 똑똑함 (Sonnet)', 'Smarter (Sonnet)', 'より賢い（Sonnet）', '更聪明（Sonnet）', 'Más listo (Sonnet)'],
-    set_warn: ['⚠ API 키는 이 브라우저에만 저장됩니다. 여러 학생이 함께 쓰는 PC에서는 키가 노출될 수 있으니 <b>중계 서버</b>를 쓰세요. 사용한 만큼 Anthropic API 요금이 나옵니다.', '⚠ The key is stored only in this browser. On shared PCs it can be exposed — use a <b>relay server</b>. Usage is billed to your Anthropic API account.', '⚠ キーはこのブラウザにだけ保存されます。共用 PC では漏れるおそれがあるので<b>中継サーバー</b>を使ってください。使った分だけ API 料金がかかります。', '⚠ 密钥只保存在此浏览器中。多人共用电脑可能泄露，请使用<b>中转服务器</b>。按用量计费。', '⚠ La clave solo se guarda en este navegador. En PCs compartidos puede filtrarse: usa un <b>servidor intermedio</b>. El uso se cobra en tu cuenta de la API.'],
-    set_relay_help: ['중계 서버 만드는 법은 저장소의 <code>relay/README.md</code>를 보세요 (Cloudflare Workers 무료).', 'See <code>relay/README.md</code> in the repository for how to make a relay (Cloudflare Workers, free tier).', '中継サーバーの作り方はリポジトリの <code>relay/README.md</code> を見てください（Cloudflare Workers 無料枠）。', '中转服务器的搭建方法见仓库中的 <code>relay/README.md</code>（Cloudflare Workers 免费）。', 'Cómo crear el servidor: <code>relay/README.md</code> del repositorio (Cloudflare Workers, gratis).'],
-    set_test: ['연결 시험', 'Test connection', '接続テスト', '测试连接', 'Probar conexión'],
-    set_save: ['저장', 'Save', '保存', '保存', 'Guardar'],
-    set_ok: ['연결 성공!', 'Connected!', '接続成功！', '连接成功！', '¡Conectado!'],
-    set_on: ['AI 연결됨', 'AI connected', 'AI 接続中', 'AI 已连接', 'IA conectada'],
-    set_off: ['내장 튜터', 'Built-in tutor', '内蔵チューター', '内置导师', 'Tutor integrado']
+    // AI 튜터 (이 컴퓨터 안에서 도는 AI — Robomakers_APP 와 같은 방식)
+    tt_off: ['AI 엔진 설치하기', 'Install AI engine', 'AIエンジンを入れる', '安装 AI 引擎', 'Instalar motor IA'],
+    tt_check: ['🔍 코드 점검', '🔍 Check code', '🔍 コード点検', '🔍 检查代码', '🔍 Revisar código'],
+    tt_error: ['❓ 오류 설명', '❓ Explain error', '❓ エラー説明', '❓ 解释错误', '❓ Explicar error'],
+    tt_hint: ['💡 힌트', '💡 Hint', '💡 ヒント', '💡 提示', '💡 Pista'],
+    tt_ask: ['궁금한 것을 물어보세요 (예: 왜 로봇이 안 멈춰요?)', "Ask a question (e.g. why doesn't my robot stop?)", '質問してみよう（例：どうしてロボットが止まらないの？）', '问个问题吧（例如：为什么机器人停不下来？）', 'Haz una pregunta (p. ej. ¿por qué no se para mi robot?)'],
+    tt_send: ['묻기', 'Ask', '質問', '提问', 'Preguntar'],
+    tt_privacy: ['🔒 블록과 질문은 이 컴퓨터 밖으로 나가지 않습니다. AI 답이 틀릴 수도 있으니 꼭 실행해서 확인하세요.', '🔒 Your blocks and questions never leave this computer. AI answers can be wrong — always run and check.', '🔒 ブロックと質問はこのパソコンの外に出ません。AIの答えは間違うこともあるので、必ず実行して確かめましょう。', '🔒 积木和问题不会离开这台电脑。AI 的回答可能有错，一定要运行确认。', '🔒 Tus bloques y preguntas no salen de este ordenador. La IA puede equivocarse: ejecuta y comprueba siempre.'],
+    tt_ready: ['준비됨 · {0}', 'Ready · {0}', '準備完了 · {0}', '已就绪 · {0}', 'Listo · {0}'],
+    tt_loading: ['AI 불러오는 중…', 'Loading AI…', 'AIを読み込み中…', '正在加载 AI…', 'Cargando IA…'],
+    tt_none: ['AI 엔진을 아직 설치하지 않았어요. 🔍 코드 점검의 규칙 검사는 AI 없이도 됩니다. 아래에서 엔진을 한 번 설치하면 인터넷 없이 질문할 수 있어요.', 'No AI engine installed yet. The rule checks in 🔍 Check code work without AI. Install an engine once below to ask questions offline.', 'AIエンジンがまだインストールされていません。🔍 コード点検のルールチェックはAIなしでも動きます。下でエンジンを一度インストールすると、オフラインで質問できます。', '还没有安装 AI 引擎。🔍 检查代码中的规则检查不需要 AI 也能用。在下面安装一次引擎后，就能离线提问。', 'Aún no hay un motor de IA instalado. Las revisiones automáticas de 🔍 Revisar código funcionan sin IA. Instala un motor una vez abajo para preguntar sin internet.'],
+    tt_setup: ['⚙ AI 엔진 설치 · 선택', '⚙ Install · choose AI engine', '⚙ AIエンジンのインストール・選択', '⚙ 安装 · 选择 AI 引擎', '⚙ Instalar · elegir motor de IA'],
+    tt_webllm: ['오픈 AI 모델 (Qwen 코더) — 추천', 'Open AI model (Qwen Coder) — recommended', 'オープンAIモデル（Qwen Coder）— おすすめ', '开放 AI 模型（Qwen Coder）— 推荐', 'Modelo de IA abierto (Qwen Coder) — recomendado'],
+    tt_webllm_d: ['모든 언어(한국어 포함). 처음 한 번 받으면 브라우저에 저장되어 인터넷 없이 씁니다. 그래픽(WebGPU)이 되는 Chrome·Edge 필요.', 'All languages. Downloaded once and stored in the browser, then works offline. Needs Chrome or Edge with WebGPU.', 'すべての言語に対応。一度ダウンロードするとブラウザに保存され、オフラインで使えます。WebGPU対応のChrome・Edgeが必要です。', '支持所有语言。下载一次后保存在浏览器中，之后离线可用。需要支持 WebGPU 的 Chrome 或 Edge。', 'Todos los idiomas. Se descarga una vez, se guarda en el navegador y luego funciona sin internet. Necesita Chrome o Edge con WebGPU.'],
+    tt_small: ['가벼운 모델 1.5B (약 1 GB)', 'Light model 1.5B (about 1 GB)', '軽量モデル 1.5B（約1 GB）', '轻量模型 1.5B（约 1 GB）', 'Modelo ligero 1.5B (unos 1 GB)'],
+    tt_large: ['똑똑한 모델 3B (약 2 GB)', 'Smarter model 3B (about 2 GB)', '賢いモデル 3B（約2 GB）', '更聪明的模型 3B（约 2 GB）', 'Modelo más listo 3B (unos 2 GB)'],
+    tt_installed: ['설치됨', 'Installed', 'インストール済み', '已安装', 'Instalado'],
+    tt_use: ['사용', 'Use', '使う', '使用', 'Usar'],
+    tt_remove: ['지우기', 'Delete', '削除', '删除', 'Borrar'],
+    tt_install: ['설치', 'Install', 'インストール', '安装', 'Instalar'],
+    tt_nogpu: ['이 브라우저는 WebGPU 를 지원하지 않아 쓸 수 없어요. 최신 Chrome 또는 Edge 를 써 주세요.', 'This browser has no WebGPU, so the model cannot run. Use the latest Chrome or Edge.', 'このブラウザはWebGPUに対応していないため使えません。最新のChromeかEdgeを使ってください。', '此浏览器不支持 WebGPU，无法运行模型。请使用最新的 Chrome 或 Edge。', 'Este navegador no tiene WebGPU, así que el modelo no puede funcionar. Usa la última versión de Chrome o Edge.'],
+    tt_chrome: ['Chrome 내장 AI (Gemini Nano)', 'Chrome built-in AI (Gemini Nano)', 'Chrome内蔵AI（Gemini Nano）', 'Chrome 内置 AI（Gemini Nano）', 'IA integrada de Chrome (Gemini Nano)'],
+    tt_chrome_d: ['Chrome 이 모델을 관리합니다 (약 4 GB, PC 전용).', 'Chrome manages the model (about 4 GB, desktop only).', 'Chromeがモデルを管理します（約4 GB、パソコンのみ）。', '由 Chrome 管理模型（约 4 GB，仅限电脑）。', 'Chrome gestiona el modelo (unos 4 GB, solo ordenador).'],
+    tt_chromeNo: ['이 브라우저에는 내장 AI가 없어요 (Chrome 148 이상 PC 필요).', 'This browser has no built-in AI (needs Chrome 148+ on a PC).', 'このブラウザには内蔵AIがありません（パソコンのChrome 148以上が必要）。', '此浏览器没有内置 AI（需要电脑上的 Chrome 148 以上）。', 'Este navegador no tiene IA integrada (necesita Chrome 148+ en un ordenador).'],
+    tt_chromeNoLang: ['Chrome 내장 AI는 아직 이 언어를 지원하지 않아요 (영어·일본어·스페인어·독일어·프랑스어만). 오픈 AI 모델을 써 주세요.', 'Chrome built-in AI does not support this language yet (English, Japanese, Spanish, German, French only). Use the open AI model.', 'Chrome内蔵AIはこの言語にまだ対応していません（英語・日本語・スペイン語・ドイツ語・フランス語のみ）。オープンAIモデルを使ってください。', 'Chrome 内置 AI 暂不支持此语言（仅英语、日语、西班牙语、德语、法语）。请使用开放 AI 模型。', 'La IA integrada de Chrome aún no admite este idioma (solo inglés, japonés, español, alemán y francés). Usa el modelo de IA abierto.'],
+    tt_needNet: ['설치할 때만 인터넷이 필요합니다. 학교 와이파이가 느리면 한 대에서 먼저 받아 보세요.', 'Internet is needed only while installing. On slow school Wi-Fi, try one computer first.', 'インターネットはインストールのときだけ必要です。学校のWi-Fiが遅いときは、まず1台で試してください。', '只有安装时需要联网。学校 Wi-Fi 较慢时，先在一台电脑上试试。', 'Solo se necesita internet al instalar. Si el Wi-Fi del colegio es lento, prueba primero en un ordenador.'],
+    tt_installing: ['받는 중 {0}%', 'Downloading {0}%', 'ダウンロード中 {0}%', '下载中 {0}%', 'Descargando {0}%'],
+    tt_failed: ['AI를 쓸 수 없어요: {0}', 'AI is not available: {0}', 'AIを使えません：{0}', '无法使用 AI：{0}', 'La IA no está disponible: {0}'],
+    tt_thinking: ['생각하는 중…', 'Thinking…', '考え中…', '思考中…', 'Pensando…'],
+    tt_rules: ['자동 점검', 'Automatic checks', '自動チェック', '自动检查', 'Revisión automática'],
+    tt_noIssue: ['✅ 규칙 검사에서 문제를 찾지 못했어요.', '✅ The rule checks found no problems.', '✅ ルールチェックでは問題が見つかりませんでした。', '✅ 规则检查没有发现问题。', '✅ La revisión automática no encontró problemas.'],
+    tt_noError: ['아직 오류가 없어요. 프로그램을 ▶ 실행해서 멈추면 다시 눌러 보세요.', 'No error yet. Run the program with ▶ and press this again if it stops.', 'まだエラーはありません。▶ 実行して止まったら、もう一度押してください。', '还没有错误。用 ▶ 运行程序，停下来后再按一次。', 'Todavía no hay errores. Ejecuta el programa con ▶ y vuelve a pulsar si se detiene.'],
+    tt_lastError: ['마지막 오류: {0}', 'Last error: {0}', '最後のエラー：{0}', '最近的错误：{0}', 'Último error: {0}'],
   });
 
   const CAT_BY_PREFIX = [
@@ -6903,17 +6941,8 @@ return Blockly.Msg;
   class Tutor {
     constructor(ctx) {
       this.ctx = ctx; // { ws(), hub, cam, rt, pySrc(), logs(), lang() }
-      this.chat = [];
-      this.cfg = this._loadCfg();
+      this.active = null; // 불러온 엔진 (Chrome 또는 Open)
     }
-    /* ---------- 설정 ---------- */
-    _loadCfg() {
-      try { return Object.assign({ mode: 'off', key: '', relay: '', model: 'fast' }, JSON.parse(localStorage.getItem('wedomakers-tutor') || '{}')); }
-      catch (e) { return { mode: 'off', key: '', relay: '', model: 'fast' }; }
-    }
-    saveCfg(c) { this.cfg = Object.assign(this.cfg, c); try { localStorage.setItem('wedomakers-tutor', JSON.stringify(this.cfg)); } catch (e) {} }
-    get online() { return (this.cfg.mode === 'key' && this.cfg.key) || (this.cfg.mode === 'relay' && this.cfg.relay); }
-
     /* ---------- 코드 점검 ---------- */
     check() {
       const ws = this.ctx.ws(), hub = this.ctx.hub, cam = this.ctx.cam;
@@ -6997,53 +7026,145 @@ return Blockly.Msg;
       ];
     }
 
-    /* ---------- Claude 채팅 ---------- */
-    _system() {
-      const langName = { ko: '한국어', en: 'English', ja: '日本語', zh: '简体中文', es: 'Español' }[I18N.lang] || 'English';
-      return [
-        'You are the friendly AI tutor inside "WeDo Makers", a block-coding web app for LEGO WeDo 2.0 robots used by elementary and middle school students.',
-        `Always answer in ${langName}. Use short sentences and simple words a 10-year-old understands. Keep answers under about 120 words unless asked for more.`,
-        'Teach, do not just solve: first give a hint or ask a guiding question; give the full block steps only if the student asks again or is clearly stuck.',
-        'Refer to blocks by the exact names shown in the app in the student\'s language (they appear in the student\'s program context). You may also show the matching Python line from the app\'s wedo2 library.',
-        'App facts: events start programs ("when Run is clicked", hub button, keyboard key, distance, tilt, "when <condition>"). Motor ports are 1 and 2; power 0-100; direction clockwise/counterclockwise. Hub light colors, sounds. Sensors: distance 0-100, tilt, hub button, keyboard, timer. Loops run one turn per 1/30 s. AI camera: skeleton (person, arm raised, body part x/y, elbow angle, shoulder tilt), hand gestures and finger count, 15 COCO objects, colors red/green/blue/yellow, plus objects and colors the student taught in the "Teach the AI" window (nearest-neighbour on image features; confidence >= 60% counts). Coordinates: x 0 (left) to 100 (right), y 0 (bottom) to 100 (top), -1 when not seen. A virtual hub is used when no real hub is connected.',
-        'Stay on topic (robots, coding, sensors, AI, science and making). Be encouraging and age-appropriate. Never ask for personal information. If asked about something unsafe or unrelated, kindly steer back to the project.'
-      ].join('\n');
-    }
-    _context() {
+    /* ---------- AI 에 줄 글 ---------- */
+    context(rules) {
       const hub = this.ctx.hub, cam = this.ctx.cam;
       const devName = { 1: 'motor', 34: 'tilt sensor', 35: 'distance sensor' };
-      const portTxt = hub.connected ? [1, 2].map((p) => `port ${p}: ${devName[hub.state.ports[p]] || 'empty'}`).join(', ') : 'not connected (virtual hub)';
-      const learn = cam.classes.length ? `taught classes: ${cam.classes.map((c) => `${c.name}(${c.samples.length} photos)`).join(', ')}; trained: ${!!cam.model}` : 'no taught objects';
-      const colors = cam.learnedColors.length ? `taught colors: ${cam.learnedColors.map((c) => c.name).join(', ')}` : '';
-      const logs = this.ctx.logs().slice(-12).join('\n');
-      return `[Student's current program as Python (generated from blocks)]\n${this.ctx.pySrc().slice(0, 6000)}\n\n[Hub] ${portTxt}\n[AI camera] ${cam.on ? 'on' : 'off'}; ${learn}; ${colors}\n[Recent console]\n${logs || '(empty)'}`;
-    }
-    async ask(question) {
-      if (!this.online) throw new Error('offline');
-      const msgs = this.chat.slice(-8).map((m) => ({ role: m.role, content: m.text }));
-      const first = `${this._context()}\n\n[Question]\n${question}`;
-      msgs.push({ role: 'user', content: first });
-      const body = {
-        model: this.cfg.model === 'smart' ? 'claude-sonnet-5-5' : 'claude-haiku-5-5',
-        max_tokens: 700, system: this._system(), messages: msgs
-      };
-      let res;
-      if (this.cfg.mode === 'key') {
-        res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', 'x-api-key': this.cfg.key.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify(body)
-        });
-      } else {
-        res = await fetch(this.cfg.relay.trim(), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error((data.error && (data.error.message || data.error)) || `HTTP ${res.status}`);
-      const text = (data.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n').trim();
-      this.chat.push({ role: 'user', text: question }, { role: 'assistant', text });
-      return text;
+      const hubTxt = hub.connected ? [1, 2].map((p) => `port ${p}: ${devName[hub.state.ports[p]] || 'empty'}`).join(', ') : 'not connected (virtual hub)';
+      const { text } = blocksToText(this.ctx.ws());
+      const py = this.ctx.pySrc().split('\n').filter((l) => l.trim() && !l.startsWith('#')).slice(0, 45).join('\n');
+      const parts = [`Hub: ${hubTxt}`, `Block program:\n${text || '(empty)'}`, `Generated Python (for reference):\n${py}`];
+      if (cam.classes.length || cam.learnedColors.length) parts.push(`AI camera: ${cam.on ? 'on' : 'off'}; taught objects: ${cam.classes.map((c) => `${c.name} (${c.samples.length} photos)`).join(', ') || '-'}; trained: ${!!cam.model}; taught colors: ${cam.learnedColors.map((c) => c.name).join(', ') || '-'}`);
+      if (rules.length) parts.push('Automatic checks found:\n' + rules.map((r) => '- ' + r).join('\n'));
+      const err = this.ctx.lastError();
+      if (err) parts.push(`Last error: ${err}`);
+      return parts.join('\n\n');
     }
   }
+
+  /* ---------- 블록 → 번호 붙은 글 [L1]… (AI 가 줄 번호로 답하면 그 블록을 표시) ---------- */
+  function fieldText(f) { try { const s = f.getText(); return s && s.trim() ? s.trim() : ''; } catch (e) { return ''; } }
+  function valueText(b) { try { return b.toString(80, '?').replace(/\s+/g, ' '); } catch (e) { return b.type; } }
+  function blocksToText(ws) {
+    const lines = [];
+    const emit = (b, depth, tokens) => {
+      const text = tokens.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+      if (text) lines.push({ n: lines.length + 1, id: b.id, depth, text });
+    };
+    const walk = (b, depth) => {
+      for (; b; b = b.getNextBlock()) {
+        if (!b.isEnabled()) continue;
+        let tokens = [], first = true;
+        for (const input of b.inputList) {
+          for (const f of input.fieldRow) tokens.push(fieldText(f));
+          if (input.type === Blockly.inputs.inputTypes.STATEMENT) {
+            emit(b, depth, tokens); tokens = []; first = false;
+            walk(input.connection && input.connection.targetBlock(), depth + 1);
+          } else if (input.connection && input.connection.targetBlock()) {
+            tokens.push('(' + valueText(input.connection.targetBlock()) + ')');
+          }
+        }
+        if (first || tokens.some(Boolean)) emit(b, depth, tokens);
+      }
+    };
+    ws.getTopBlocks(true).filter((b) => window.WEDO_HATS.includes(b.type) && b.isEnabled()).forEach((b) => walk(b, 0));
+    return { lines, text: lines.map((l) => `[L${l.n}] ${'  '.repeat(l.depth)}${l.text}`).join('\n') };
+  }
+
+  const LANG_NAME = { ko: 'Korean', en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', es: 'Spanish' };
+  const FACTS = `Facts about this platform (trust these):
+- LEGO WeDo 2.0 hub, programmed with word blocks in "WeDo Makers". The listing shows each block as one line [Ln]. A program starts from an event block (Run clicked, hub button, keyboard key, distance, tilt, "when <condition>").
+- Motor ports are 1 and 2 (or all ports). Motor power is 0-100 %. Direction is clockwise / counterclockwise. "turn motor on" keeps spinning until "turn motor off" or Stop.
+- The distance sensor gives 0 (near) to 100 (far). Tilt directions: up, down, left, right. The hub light can be set to colors or RGB. Sounds are notes or Hz.
+- Every loop turn waits 1/30 s automatically, so "change by 1" in a forever loop takes about 3 s to go from 0 to 100.
+- No hub connected = the virtual hub (sliders and buttons on screen) is used instead.
+- AI camera (PC webcam): skeleton (person seen, arm raised, body part x/y, elbow angle, shoulder tilt), hand gesture and finger count, 15 objects, colors red/green/blue/yellow, plus objects and colors the student taught in the "Teach the AI" window (true when confidence >= 60 %). x 0 (left) to 100 (right), y 0 (bottom) to 100 (top), -1 when not seen.
+- A variable must be set before it is read. Blocks that are not attached under an event block do not run (they look faded).`;
+  function systemPrompt(lang) {
+    return `You are a friendly, patient coding tutor for children (age 9-15) using the "WeDo Makers" block editor for LEGO WeDo 2.0.
+Always answer in ${LANG_NAME[lang] || 'English'}.
+Rules:
+- Be short: at most 5 short sentences or a short bullet list.
+- When you talk about a block, cite its line like [L4] (exactly this format).
+- Explain WHY, then say which block to change and how, using the block words from the listing.
+- Do not write a whole program. Do not invent blocks or functions. If you are not sure, say so.
+${FACTS}`;
+  }
+
+  /* ---------- 엔진 ---------- */
+  const CHROME_LANGS = ['en', 'ja', 'es', 'de', 'fr'];
+  const MODELS = {
+    small: { f16: 'Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC', f32: 'Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC' },
+    large: { f16: 'Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC', f32: 'Qwen2.5-Coder-3B-Instruct-q4f32_1-MLC' }
+  };
+  const WEBLLM = new URL('vendor/web-llm/index.js', location.href).href; // 같은 사이트에 올린 WebLLM 0.2.87
+  const Chrome = {
+    key: 'chrome',
+    async state(lang) {
+      if (!('LanguageModel' in self)) return { ok: false, why: 'tt_chromeNo' };
+      if (!CHROME_LANGS.includes(lang)) return { ok: false, why: 'tt_chromeNoLang' };
+      try { const a = await LanguageModel.availability(this.opts(lang)); return { ok: a !== 'unavailable', installed: a === 'available', a }; }
+      catch (e) { return { ok: false, why: 'tt_chromeNo' }; }
+    },
+    opts(lang) { return { expectedInputs: [{ type: 'text', languages: ['en', lang] }], expectedOutputs: [{ type: 'text', languages: [lang] }] }; },
+    async load(lang, progress) {
+      this.base = await LanguageModel.create({
+        ...this.opts(lang),
+        initialPrompts: [{ role: 'system', content: systemPrompt(lang) }],
+        monitor(m) { m.addEventListener('downloadprogress', (e) => progress(Math.round((e.loaded || 0) * 100))); }
+      });
+      this.lang = lang;
+    },
+    async *ask(user) {
+      const s = await this.base.clone();
+      let prev = '';
+      for await (const chunk of s.promptStreaming(user)) {
+        const piece = chunk.startsWith(prev) && prev ? chunk.slice(prev.length) : chunk; // 누적·조각 방식 모두
+        prev = chunk.startsWith(prev) ? chunk : prev + chunk;
+        yield piece;
+      }
+      if (s.destroy) s.destroy();
+    }
+  };
+  const Open = {
+    key: 'webllm',
+    async gpu() {
+      if (!navigator.gpu) return null;
+      try { const a = await navigator.gpu.requestAdapter(); return a ? { f16: a.features.has('shader-f16') } : null; } catch (e) { return null; }
+    },
+    async lib() { this._lib = this._lib || (await import(WEBLLM)); return this._lib; },
+    async modelId(size) { const g = await this.gpu(); return g ? MODELS[size][g.f16 ? 'f16' : 'f32'] : null; },
+    async installed(size) {
+      const id = await this.modelId(size); if (!id) return false;
+      try { return await (await this.lib()).hasModelInCache(id); } catch (e) { return false; }
+    },
+    async load(size, lang, progress) {
+      const id = await this.modelId(size);
+      const lib = await this.lib();
+      if (this.engine && this.id === id) return;
+      if (this.engine && this.engine.unload) this.engine.unload();
+      this.engine = await lib.CreateMLCEngine(id, { initProgressCallback: (r) => progress(Math.round((r.progress || 0) * 100), r.text) });
+      this.id = id; this.lang = lang;
+    },
+    async remove(size) {
+      const id = await this.modelId(size);
+      if (id) await (await this.lib()).deleteModelAllInfoInCache(id);
+      if (this.id === id) { if (this.engine && this.engine.unload) this.engine.unload(); this.engine = null; this.id = null; }
+    },
+    async *ask(user, lang) {
+      const stream = await this.engine.chat.completions.create({
+        messages: [{ role: 'system', content: systemPrompt(lang) }, { role: 'user', content: user }],
+        stream: true, temperature: 0.3, max_tokens: 450
+      });
+      for await (const c of stream) yield (c.choices && c.choices[0] && c.choices[0].delta && c.choices[0].delta.content) || '';
+    }
+  };
+  const QUESTION = {
+    check: 'Check my block program for mistakes. Explain the most important problem first and which block to change.',
+    error: 'My program stopped with the error shown below. Explain in simple words what it means and how to fix it.',
+    hint: 'Do not solve it for me. Give me one hint about what to try or improve next in my block program.'
+  };
+  const tf = (key, ...a) => t(key).replace(/\{(\d)\}/g, (_, i) => (a[i] !== undefined ? a[i] : ''));
 
   // 아주 작은 마크다운 → HTML (안전하게 이스케이프한 뒤 굵게·코드·목록만)
   function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -7063,7 +7184,7 @@ return Blockly.Msg;
     }).join('');
   }
 
-  window.WeTutor = { Tutor, md, fill };
+  window.WeTutor = { Tutor, md, fill, blocksToText, Chrome, Open, QUESTION, tf, systemPrompt };
 })();
 </script>
 <script>/* ===== 위두 메이커스 — 앱 UI ===== */
@@ -7071,7 +7192,7 @@ return Blockly.Msg;
   const $ = (s) => document.querySelector(s);
   const C = window.WEDO_COLORS;
   const STORE_KEY = 'wedo2-codinglab-project'; // 이전 버전과 호환 (이름 바꾸지 않음)
-  const VERSION = '1.5.0';
+  const VERSION = '1.6.0';
   const REPORT_EMAIL = 'robot-league@naver.com';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -7474,7 +7595,8 @@ is_color_seen('red') / color_x('red') / color_size('red')
     d.innerHTML = `<span class="t">${new Date().toTimeString().slice(0, 8)}</span>${esc(msg)}`;
     if (kind === 'err') {
       const a = document.createElement('button'); a.className = 'linkbtn'; a.textContent = t('report_btn'); a.onclick = openReport; d.appendChild(a);
-      const tb = document.createElement('button'); tb.className = 'linkbtn'; tb.textContent = '🤖 ' + t('tutor_tab'); tb.onclick = () => (tutor.online ? (showTutor('chat'), sendChat(t('chat_q_error'))) : showTutor('check')); d.appendChild(tb);
+      lastErr = String(msg).slice(0, 300);
+      const tb = document.createElement('button'); tb.className = 'linkbtn'; tb.textContent = '🤖 ' + t('tt_error'); tb.onclick = () => { showTab('tutorPane'); askAI('error'); }; d.appendChild(tb);
     }
     logs.appendChild(d);
     while (logs.children.length > 500) logs.firstChild.remove();
@@ -7888,20 +8010,27 @@ is_color_seen('red') / color_x('red') / color_size('red')
   cam.addEventListener('change', renderLearn);
   $('#btnLearn').onclick = () => { ensureDefaultClasses(); openLearn(); };
 
-  /* ---------- AI 튜터 ---------- */
+  /* ---------- AI 튜터 (점검·설명·미션은 AI 없이, 질문은 이 컴퓨터 안의 AI 로) ---------- */
+  let lastErr = '';
   const tutor = new WeTutor.Tutor({
     ws: () => ws, hub, cam, rt,
     pySrc: () => pySrc,
+    lastError: () => lastErr,
     logs: () => [...document.querySelectorAll('#logs .log')].map((d) => d.textContent)
   });
-  let tmode = 'check', selectedId = null, chatBusy = false;
+  const { Chrome, Open, QUESTION, tf, blocksToText } = WeTutor;
+  const AI_STORE = 'wedomakers-tutor-ai';
+  let ai = { engine: '', size: 'small' };
+  try { ai = Object.assign(ai, JSON.parse(localStorage.getItem(AI_STORE) || '{}')); } catch (e) {}
+  const keepAI = () => { try { localStorage.setItem(AI_STORE, JSON.stringify(ai)); } catch (e) {} };
+  let active = null, aiBusy = false, lineMap = [];
+  const chatLog = []; // { kind, html }
+  let tmode = 'check', selectedId = null;
   const mres = {}; // 미션 확인 결과 (다시 그려도 남도록)
   const tbody = $('#tutorBody');
   const bot = (html) => `<div class="tmsg"><div class="av">🤖</div><div class="bub">${html}</div></div>`;
-  function showTutor(mode) {
-    showTab('tutorPane');
-    if (mode) setTMode(mode); else renderTutor();
-  }
+  const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  function showTutor(mode) { showTab('tutorPane'); if (mode) setTMode(mode); else renderTutor(); }
   function setTMode(m) {
     tmode = m;
     document.querySelectorAll('[data-tmode]').forEach((b) => b.classList.toggle('on', b.dataset.tmode === m));
@@ -7910,16 +8039,43 @@ is_color_seen('red') / color_x('red') / color_size('red')
   }
   document.querySelectorAll('[data-tmode]').forEach((b) => (b.onclick = () => setTMode(b.dataset.tmode)));
   const ICON = { err: '⛔', warn: '⚠️', tip: '💡', ok: '✅' };
-  function renderTutor() {
+
+  // 블록 강조 (AI 답의 [L4] 를 누르면)
+  let glowT = 0;
+  function glow(ids) {
+    clearTimeout(glowT);
+    ws.getAllBlocks(false).forEach((b) => b.getSvgRoot() && b.getSvgRoot().classList.remove('wm-glow'));
+    const bs = ids.map((id) => ws.getBlockById(id)).filter(Boolean);
+    bs.forEach((b) => b.getSvgRoot().classList.add('wm-glow'));
+    if (bs[0]) ws.centerOnBlock(bs[0].id);
+    glowT = setTimeout(() => bs.forEach((b) => b.getSvgRoot() && b.getSvgRoot().classList.remove('wm-glow')), 8000);
+  }
+  const linkify = (src) => WeTutor.md(src).replace(/\[L(\d+)(?:\s*[-–~]\s*L?(\d+))?\]/g, (m, x, y) => {
+    const from = +x, to = +(y || x);
+    const ids = lineMap.filter((l) => l.n >= from && l.n <= to).map((l) => l.id);
+    return ids.length ? `<a href="#" class="tt-ln" data-ids="${ids.join(',')}">${y ? `${x}–${y}` : x}</a>` : m;
+  });
+  tbody.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-ids]'); if (!a) return;
+    e.preventDefault(); glow(a.dataset.ids.split(',').filter(Boolean));
+  });
+
+  function renderStatus() {
     const st = $('#tutorSet');
-    st.classList.toggle('online', !!tutor.online);
-    $('#tutorState').textContent = tutor.online ? t('set_on') : t('set_off');
+    st.classList.toggle('online', !!active);
+    const name = active ? (active === Chrome ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')) : t('tt_off');
+    $('#tutorState').textContent = active ? tf('tt_ready', name.replace(/\s*\(.*\)$/, '')) : t('tt_off');
+  }
+  function renderTutor() {
+    renderStatus();
     if (!$('#tutorPane').classList.contains('on')) return;
     if (tmode === 'check') {
       const items = tutor.check();
-      tbody.innerHTML = bot(t('tutor_hello')) + items.map((it, i) => `<div class="chk ${it.lv}"><span class="ic">${ICON[it.lv]}</span><div>${it.html}${it.id ? ` <button class="linkbtn" data-show="${it.id}">${t('tutor_show')}</button>` : ''}${it.action === 'learn' ? ` <button class="linkbtn" data-learn>${t('tutor_open_learn')}</button>` : ''}</div></div>`).join('');
-      tbody.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { const bl = ws.getBlockById(b.dataset.show); if (bl) { ws.centerOnBlock(bl.id); bl.select(); } }));
+      tbody.innerHTML = bot(t('tutor_hello')) + items.map((it) => `<div class="chk ${it.lv}"><span class="ic">${ICON[it.lv]}</span><div>${it.html}${it.id ? ` <button class="linkbtn" data-show="${it.id}">${t('tutor_show')}</button>` : ''}${it.action === 'learn' ? ` <button class="linkbtn" data-learn>${t('tutor_open_learn')}</button>` : ''}</div></div>`).join('') +
+        (lastErr ? `<div class="chk err"><span class="ic">⛔</span><div>${esc(tf('tt_lastError', lastErr))} <button class="linkbtn" data-askerr>${t('tt_error')}</button></div></div>` : '');
+      tbody.querySelectorAll('[data-show]').forEach((b) => (b.onclick = () => { const bl = ws.getBlockById(b.dataset.show); if (bl) { glow([bl.id]); bl.select(); } }));
       tbody.querySelectorAll('[data-learn]').forEach((b) => (b.onclick = () => { ensureDefaultClasses(); openLearn('obj'); }));
+      tbody.querySelectorAll('[data-askerr]').forEach((b) => (b.onclick = () => { setTMode('chat'); askAI('error'); }));
     } else if (tmode === 'explain') {
       const bl = selectedId && ws.getBlockById(selectedId);
       const x = bl && tutor.explain(bl);
@@ -7940,59 +8096,109 @@ is_color_seen('red') / color_x('red') / color_size('red')
         box.querySelector('.res').textContent = ok ? t('m_done') : t('m_not_yet');
         if (!ok) box.querySelector('details').open = true;
       }));
-    } else {
-      $('#chatChips').innerHTML = ['chat_ask_code', 'chat_ask_error', 'chat_ask_idea'].map((k, i) => `<button data-q="${['chat_q_code', 'chat_q_error', 'chat_q_idea'][i]}">${t(k)}</button>`).join('') +
-        (tutor.chat.length ? `<button data-clearchat>${t('chat_clear')}</button>` : '');
-      $('#chatChips').querySelectorAll('[data-q]').forEach((b) => (b.onclick = () => sendChat(t(b.dataset.q))));
-      const cc = $('#chatChips').querySelector('[data-clearchat]'); if (cc) cc.onclick = () => { tutor.chat = []; renderTutor(); };
-      $('#chatIn').placeholder = t('chat_ph');
-      const msgs = tutor.chat.map((m) => m.role === 'user' ? `<div class="tmsg me"><div class="av">🙂</div><div class="bub">${esc(m.text)}</div></div>` : bot(WeTutor.md(m.text))).join('');
-      tbody.innerHTML = (tutor.online ? bot(t('tutor_hello')) : bot(t('chat_off'))) + msgs + (chatBusy ? bot(`<i>${t('chat_thinking')}</i>`) : '');
-      tbody.scrollTop = tbody.scrollHeight;
+    } else renderChat();
+  }
+
+  // ---- AI 에게 묻기 화면 ----
+  function renderChat() {
+    tbody.innerHTML = `<div class="tt-setup" id="ttSetup"></div>
+      <div class="tt-actions"><button data-q="check">${t('tt_check')}</button><button data-q="error">${t('tt_error')}</button><button data-q="hint">${t('tt_hint')}</button></div>
+      <div class="tt-log" id="ttLog">${chatLog.map((m) => `<div class="tt-msg ${m.kind}">${m.html}</div>`).join('')}</div>
+      <p class="tt-note">${t('tt_privacy')}</p>`;
+    tbody.querySelector('.tt-actions').onclick = (e) => { const q = e.target.closest('[data-q]'); if (q) askAI(q.dataset.q); };
+    $('#chatIn').placeholder = t('tt_ask');
+    $('#chatSend').textContent = t('tt_send');
+    renderSetup();
+    tbody.scrollTop = tbody.scrollHeight;
+  }
+  function addMsg(kind, html) {
+    chatLog.push({ kind, html });
+    const log = $('#ttLog'); if (!log) return null;
+    const d = document.createElement('div'); d.className = 'tt-msg ' + kind; d.innerHTML = html; log.appendChild(d);
+    tbody.scrollTop = tbody.scrollHeight;
+    return { el: d, rec: chatLog[chatLog.length - 1] };
+  }
+  async function renderSetup() {
+    const box = $('#ttSetup'); if (!box) return;
+    const lang = I18N.lang;
+    const chrome = await Chrome.state(lang);
+    const gpu = await Open.gpu();
+    const sizes = gpu ? await Promise.all(['small', 'large'].map(async (k) => [k, await Open.installed(k)])) : [];
+    if (!$('#ttSetup')) return;
+    box.innerHTML = `${active ? '' : `<p class="tt-none">${t('tt_none')}</p>`}
+      <details class="tt-eng" ${active ? '' : 'open'}><summary>${t('tt_setup')}</summary>
+        <div class="tt-opt"><b>${t('tt_webllm')}</b><small>${t('tt_webllm_d')}</small>
+          ${gpu ? sizes.map(([k, ok]) => `<div class="tt-row"><span>${t(k === 'large' ? 'tt_large' : 'tt_small')}</span>
+            ${ok ? `<em>${t('tt_installed')}</em><button data-use="webllm:${k}">${t('tt_use')}</button><button data-rm="${k}" title="${t('tt_remove')}">🗑</button>`
+              : `<button class="primary" data-use="webllm:${k}">${t('tt_install')}</button>`}</div>`).join('') : `<small class="tt-bad">${t('tt_nogpu')}</small>`}
+        </div>
+        <div class="tt-opt"><b>${t('tt_chrome')}</b><small>${t('tt_chrome_d')}</small>
+          ${chrome.ok ? `<div class="tt-row"><span>Gemini Nano</span>${chrome.installed ? `<em>${t('tt_installed')}</em>` : ''}
+            <button class="${chrome.installed ? '' : 'primary'}" data-use="chrome">${t(chrome.installed ? 'tt_use' : 'tt_install')}</button></div>` : `<small class="tt-bad">${t(chrome.why)}</small>`}
+        </div>
+        <div class="tt-prog" hidden><i></i><span></span></div>
+        <small class="tt-net">${t('tt_needNet')}</small>
+      </details>`;
+    box.onclick = async (e) => {
+      const use = e.target.closest('[data-use]') && e.target.closest('[data-use]').dataset.use;
+      const rm = e.target.closest('[data-rm]') && e.target.closest('[data-rm]').dataset.rm;
+      if (rm) { await Open.remove(rm); if (active === Open && ai.size === rm) active = null; renderStatus(); return renderSetup(); }
+      if (!use || aiBusy) return;
+      const prog = box.querySelector('.tt-prog');
+      const bar = (pc, txt) => { prog.hidden = false; prog.querySelector('i').style.width = pc + '%'; prog.querySelector('span').textContent = tf('tt_installing', pc) + (txt ? ' · ' + String(txt).slice(0, 60) : ''); };
+      aiBusy = true;
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); // 큰 모델 파일을 지우지 않도록
+      try {
+        if (use === 'chrome') { await Chrome.load(I18N.lang, bar); active = Chrome; ai.engine = 'chrome'; }
+        else { ai.size = use.split(':')[1]; await Open.load(ai.size, I18N.lang, bar); active = Open; ai.engine = 'webllm'; }
+        keepAI();
+        toast(tf('tt_ready', use === 'chrome' ? t('tt_chrome') : t(ai.size === 'large' ? 'tt_large' : 'tt_small')));
+      } catch (err) { addMsg('err', esc(tf('tt_failed', err.message || err))); }
+      finally { aiBusy = false; renderStatus(); renderSetup(); }
+    };
+  }
+  // 예전에 쓰던 엔진을 다시 불러오기 (설치돼 있을 때만 → 인터넷 없이)
+  async function restoreAI() {
+    try {
+      if (ai.engine === 'webllm' && (await Open.installed(ai.size))) { $('#tutorState').textContent = t('tt_loading'); await Open.load(ai.size, I18N.lang, () => {}); active = Open; }
+      else if (ai.engine === 'chrome' && (await Chrome.state(I18N.lang)).installed) { await Chrome.load(I18N.lang, () => {}); active = Chrome; }
+    } catch (e) { active = null; }
+    renderStatus();
+    if (tmode === 'chat') renderSetup();
+  }
+  async function askAI(kind, free) {
+    if (aiBusy) return;
+    if (tmode !== 'chat') setTMode('chat');
+    const rulesItems = tutor.check().filter((r) => r.lv !== 'ok');
+    lineMap = blocksToText(ws).lines;
+    addMsg('me', esc(kind ? t('tt_' + kind) : free));
+    if (kind === 'check' || kind === 'error') {
+      if (kind === 'error' && !lastErr) { addMsg('rule', esc(t('tt_noError'))); return; }
+      const shown = kind === 'error' ? [{ lv: 'err', html: esc(tf('tt_lastError', lastErr)) }] : rulesItems;
+      addMsg('rule', `<b>${t('tt_rules')}</b><br>` + (shown.length ? shown.map((r) => `<a href="#" class="tt-rule lv-${r.lv}" data-ids="${r.id || ''}">${ICON[r.lv]} ${plain(r.html)}</a>`).join('<br>') : esc(t('tt_noIssue'))));
     }
+    if (!active) { if (!kind || kind === 'hint') addMsg('sys', esc(t('tt_none'))); return; }
+    aiBusy = true;
+    const out = addMsg('ai', `<span class="tt-dots">${t('tt_thinking')}</span>`);
+    let txt = '';
+    try {
+      const user = `${kind ? QUESTION[kind] : 'Question: ' + free}\n\n${tutor.context(rulesItems.map((r) => plain(r.html)))}`;
+      for await (const piece of active.ask(user, I18N.lang)) {
+        txt += piece;
+        const clean = txt.replace(/<think>[\s\S]*?(<\/think>|$)/g, '').trim(); // Qwen 의 생각 표시는 숨김
+        out.rec.html = linkify(clean) || `<span class="tt-dots">${t('tt_thinking')}</span>`;
+        if (out.el.isConnected) out.el.innerHTML = out.rec.html;
+        tbody.scrollTop = tbody.scrollHeight;
+      }
+    } catch (err) {
+      out.rec.html = esc(tf('tt_failed', err.message || err)); out.rec.kind = 'err';
+      if (out.el.isConnected) { out.el.innerHTML = out.rec.html; out.el.classList.add('err'); }
+    } finally { aiBusy = false; }
   }
-  async function sendChat(q) {
-    q = (q || '').trim(); if (!q || chatBusy) return;
-    if (!tutor.online) { renderTutor(); return; }
-    chatBusy = true;
-    tutor.chat.push({ role: 'user', text: q, pending: true });
-    renderTutor();
-    tutor.chat.pop();
-    try { await tutor.ask(q); }
-    catch (e) { tutor.chat.push({ role: 'user', text: q }, { role: 'assistant', text: `⚠ ${t('chat_err')}: ${e.message}` }); }
-    chatBusy = false; renderTutor();
-  }
-  $('#chatSend').onclick = () => { const v = $('#chatIn').value; $('#chatIn').value = ''; sendChat(v); };
+  $('#chatSend').onclick = () => { const v = $('#chatIn').value.trim(); if (!v) return; $('#chatIn').value = ''; askAI(null, v); };
   $('#chatIn').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#chatSend').click(); } });
   $('#btnTutor').onclick = () => showTutor();
-  $('#tutorSet').onclick = () => {
-    const c = tutor.cfg;
-    openModal(`<h3>${t('set_title')}</h3><p>${t('set_desc')}</p>
-      <div class="setopt">
-        <label><input type="radio" name="tmode" value="off" ${c.mode === 'off' ? 'checked' : ''}> ${t('set_mode_off')}</label>
-        <label><input type="radio" name="tmode" value="key" ${c.mode === 'key' ? 'checked' : ''}> ${t('set_mode_key')}</label>
-        <label><input type="radio" name="tmode" value="relay" ${c.mode === 'relay' ? 'checked' : ''}> ${t('set_mode_relay')}</label>
-      </div>
-      <div class="setfld" data-for="key"><span>${t('set_key')}</span><input type="password" id="setKey" value="${esc(c.key)}" placeholder="sk-ant-…" autocomplete="off"></div>
-      <div class="setfld" data-for="relay"><span>${t('set_relay')}</span><input type="text" id="setRelay" value="${esc(c.relay)}" placeholder="https://wedo-tutor.example.workers.dev"></div>
-      <div class="setfld"><span>${t('set_model')}</span><select id="setModel"><option value="fast" ${c.model !== 'smart' ? 'selected' : ''}>${t('set_m_fast')}</option><option value="smart" ${c.model === 'smart' ? 'selected' : ''}>${t('set_m_smart')}</option></select></div>
-      <p class="setwarn">${t('set_warn')}</p><p class="muted">${t('set_relay_help')}</p>
-      <p id="setRes" class="muted"></p>
-      <div class="actions"><button class="btn" id="setTest">${t('set_test')}</button><button class="btn" data-close>${t('cancel')}</button><button class="btn primary" id="setSave">${t('set_save')}</button></div>`, (m) => {
-      const read = () => ({ mode: m.querySelector('[name=tmode]:checked').value, key: m.querySelector('#setKey').value.trim(), relay: m.querySelector('#setRelay').value.trim(), model: m.querySelector('#setModel').value });
-      const sync = () => { const v = read().mode; m.querySelectorAll('[data-for]').forEach((f) => { f.style.display = f.dataset.for === v ? '' : 'none'; }); };
-      m.querySelectorAll('[name=tmode]').forEach((r) => (r.onchange = sync)); sync();
-      m.querySelector('#setSave').onclick = () => { tutor.saveCfg(read()); closeModal(); renderTutor(); };
-      m.querySelector('#setTest').onclick = async () => {
-        const old = Object.assign({}, tutor.cfg), hist = tutor.chat;
-        tutor.cfg = Object.assign({}, old, read()); tutor.chat = [];
-        const res = m.querySelector('#setRes'); res.textContent = t('chat_thinking');
-        try { const a = await tutor.ask('Reply with just: OK'); res.textContent = `✅ ${t('set_ok')} (${a.slice(0, 40)})`; }
-        catch (e) { res.textContent = `⛔ ${t('chat_err')}: ${e.message}`; }
-        tutor.cfg = old; tutor.chat = hist;
-      };
-    });
-  };
+  $('#tutorSet').onclick = () => showTutor('chat');
   // 블록을 누르면 설명이 따라오고, 코드가 바뀌면 점검·미션을 새로 고친다
   let tutorT;
   function tutorWatch(e) {
@@ -8001,6 +8207,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     clearTimeout(tutorT); tutorT = setTimeout(() => { if (tmode === 'check' || tmode === 'missions') renderTutor(); }, 500);
   }
   hub.addEventListener('change', () => { if (tmode === 'check') { clearTimeout(tutorT); tutorT = setTimeout(renderTutor, 500); } });
+  if (ai.engine) setTimeout(restoreAI, 800);
 
   /* ---------- 변수 모니터 (블록 화면 위에 떠 있는 창) ---------- */
   const vm = $('#varMon');
