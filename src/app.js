@@ -982,7 +982,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     const g = await Open.gpu();
     const chrome = await Chrome.state(lang);
     RB.open({
-      lang, cases: WeTutor.BENCH_CASES, systemPrompt: WeTutor.systemPrompt,
+      lang, cases: WeTutor.BENCH_CASES.map((c) => Object.assign({}, c, { title: c.titles[['ko', 'en', 'ja', 'zh', 'es'].indexOf(lang)] || c.title })), systemPrompt: WeTutor.systemPrompt,
       lib: () => Open.lib(), f16: !!(g && g.f16), installed: lastInst,
       chrome: chrome.ok && chrome.installed ? {
         ok: true, label: t('tt_chrome'),

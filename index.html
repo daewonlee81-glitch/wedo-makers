@@ -78,10 +78,13 @@ body.resizing{user-select:none}body.resizing iframe,body.resizing #blockArea{poi
 .camwin{position:absolute;right:66px;bottom:14px;z-index:40;max-width:calc(100% - 180px);background:#0f1624;color:#e6edf7;border-radius:14px;box-shadow:0 10px 28px rgba(10,20,40,.35);overflow:hidden;display:flex;flex-direction:column}
 .camwin[hidden]{display:none}
 .camwin.sz-s{width:240px}.camwin.sz-m{width:340px}.camwin.sz-l{width:480px}
-.cam-head{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;background:#0f766e;cursor:move;user-select:none;touch-action:none;font-size:13px}
-.cam-head .learnbtn{width:auto;padding:0 8px;font-size:12px;font-weight:700;background:#6d28d9}
+.cam-head{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 12px;white-space:nowrap;min-width:0;background:#0f766e;cursor:move;user-select:none;touch-action:none;font-size:13px}
+.cam-head .learnbtn{width:auto;padding:0 8px;font-size:12px;font-weight:700;background:#6d28d9;white-space:nowrap;flex:none}
 .cam-head button{border:0;background:rgba(255,255,255,.18);color:#fff;width:24px;height:24px;border-radius:6px;font-size:15px;line-height:1;padding:0}
-.cam-status{font-size:11.5px;opacity:.85;font-weight:600}
+.cam-head > b{flex:none}
+.cam-status{font-size:11.5px;opacity:.85;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.camwin.sz-s .cam-status{display:none}
+.cam-head .spacer{flex:1 1 0;min-width:0}
 .cam-view{position:relative;background:#000;aspect-ratio:4/3}
 .cam-view canvas{width:100%;height:100%;display:block}
 .cam-view #camPower{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
@@ -251,7 +254,9 @@ aside{width:var(--side-w);flex:none;display:flex;flex-direction:column;backgroun
 .py{flex:none;height:var(--py-h,48%);display:flex;flex-direction:column;min-height:90px;background:var(--code-bg)}
 .py-head{display:flex;align-items:center;gap:6px;padding:8px 10px 8px 14px;color:#c9d3e3;border-bottom:1px solid #1e2a3d;overflow:hidden}
 .py-head .title{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
-.py-head .btn,.py-head .badge{flex-shrink:0;white-space:nowrap}
+.py-head .btn{flex-shrink:0;white-space:nowrap}
+.py-head .badge{white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1500px){.py-head .badge{display:none}}
 .py-head .title{display:flex;align-items:center;gap:8px;font-weight:700;color:#fff}
 .py-logo{width:18px;height:18px}
 .py-head .badge{font-size:11px;padding:2px 7px;border-radius:99px;background:#1d2a40;color:#8fb2e8;font-weight:600}
@@ -7416,11 +7421,19 @@ return Blockly.Msg;
         if (first || tokens.some(Boolean)) emit(b, depth, tokens);
       }
     };
-    ws.getTopBlocks(true).filter((b) => window.WEDO_HATS.includes(b.type) && b.isEnabled()).forEach((b) => walk(b, 0));
+    ws.getTopBlocks(true).filter((b) => window.WEDO_HATS.includes(b.type) && b.isEnabled()).forEach((hat) => {
+      const tokens = [];
+      for (const input of hat.inputList) {
+        for (const f of input.fieldRow) tokens.push(fieldText(f));
+        if (input.connection && input.connection.targetBlock()) tokens.push('(' + valueText(input.connection.targetBlock()) + ')');
+      }
+      emit(hat, 0, tokens);
+      walk(hat.getNextBlock(), 1); // 이벤트 아래 블록은 한 칸 들여쓰기
+    });
     return { lines, text: lines.map((l) => `[L${l.n}] ${'  '.repeat(l.depth)}${l.text}`).join('\n') };
   }
 
-  const LANG_NAME = { ko: 'Korean', en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', es: 'Spanish' };
+  const LANG_NAME = { ko: 'Korean', en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', 'zh-CN': 'Simplified Chinese', 'zh-TW': 'Traditional Chinese', es: 'Spanish' };
   const FACTS = `Facts about this platform (trust these):
 - LEGO WeDo 2.0 hub, programmed with word blocks in "WeDo Makers". The listing shows each block as one line [Ln]. A program starts from an event block (Run clicked, hub button, keyboard key, distance, tilt, "when <condition>").
 - Motor ports are 1 and 2 (or all ports). Motor power is 0-100 %. Direction is clockwise / counterclockwise. "turn motor on" keeps spinning until "turn motor off" or Stop.
@@ -7508,23 +7521,25 @@ ${FACTS}`;
   };
 
   // 모델 비교 시험 예제 (일부러 틀린 곳 하나씩 · expect = 짚어야 할 줄)
+  // 실제 블록 글(blocksToText)과 같은 모양: 이벤트 블록 아래는 한 칸 들여쓰기
   const BENCH_CASES = [
-    { title: '가까이 오면 멈추기 — 비교 방향이 반대', expect: [2],
+    { titles: ['가까이 오면 멈추기 — 비교 방향이 반대', 'Stop when close — comparison reversed', '近づいたら止める — 比較の向きが逆', '靠近就停 — 比较方向反了', 'Parar al acercarse — comparación al revés'], expect: [3],
       question: 'The motor should stop when my hand comes close to the distance sensor, but it stops when my hand is far away. Check my block program.',
-      listing: `Hub: port 1: motor, port 2: distance sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 거리 센서 값이 > 20 이 될 때\n[L3]   포트 1 모터 끄기` },
-    { title: '모터가 멈추지 않음 — 끄기 블록이 없음', expect: [2, 3],
+      listing: `Hub: port 1: motor, port 2: distance sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3] 거리 센서 값이 > 20 이 될 때\n[L4]   포트 1 모터 끄기` },
+    { titles: ['모터가 멈추지 않음 — 끄기 블록이 없음', 'Motor never stops — no "off" block', 'モーターが止まらない — オフのブロックがない', '马达不停 — 没有关闭积木', 'El motor no para — falta «apagar»'], expect: [2, 3],
       question: 'My motor never stops. I wanted it to run for 3 seconds. Which block should I change?',
-      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 3 초 기다리기\n[L4] 허브 불빛을 빨강 으로 켜기` },
-    { title: '변수를 정하지 않음', expect: [4, 2],
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3]   3 초 기다리기\n[L4]   허브 불빛을 빨강 으로 켜기` },
+    { titles: ['변수를 정하지 않음', 'Variable never set', '変数を決めていない', '变量没有赋初值', 'La variable no tiene valor inicial'], expect: [5, 2],
       question: 'The motor does not get faster. Check my block program.',
-      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 무한 반복하기\n[L4]   포트 1 모터 파워를 (속도) % 로 정하기\n[L5]   속도 를 1 만큼 바꾸기\n\nNote: the variable "속도" is never set to a start value.` },
-    { title: '포트 착오 — 모터는 포트 2', expect: [2],
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3]   무한 반복하기\n[L4]     속도 를 1 만큼 바꾸기\n[L5]     포트 1 모터 파워를 (속도) % 로 정하기\n\nNote: the variable "속도" is never set to a start value.` },
+    { titles: ['포트 착오 — 모터는 포트 2', 'Wrong port — the motor is on port 2', 'ポートのまちがい — モーターはポート2', '端口错误 — 马达在端口 2', 'Puerto equivocado: el motor está en el 2'], expect: [2],
       question: 'Nothing moves when I click Run. Why?',
-      listing: `Hub: port 1: distance sensor, port 2: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 2 초 동안 켜기\n[L3] 허브 불빛을 초록 으로 켜기` },
-    { title: '기울기 방향 착오', expect: [2],
+      listing: `Hub: port 1: distance sensor, port 2: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터를 2 초 동안 켜기\n[L3]   허브 불빛을 초록 으로 켜기` },
+    { titles: ['기울기 방향 착오', 'Wrong tilt direction', '傾きの向きのまちがい', '倾斜方向错误', 'Dirección de inclinación equivocada'], expect: [1],
       question: 'The light should turn blue when I tilt the hub to the LEFT, but it happens when I tilt it right. Which block is wrong?',
-      listing: `Hub: port 1: tilt sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 허브가 오른쪽 으로 기울어질 때\n[L3]   허브 불빛을 파랑 으로 켜기` },
+      listing: `Hub: port 1: tilt sensor\n\nBlock program:\n[L1] 허브가 오른쪽 으로 기울어질 때\n[L2]   허브 불빛을 파랑 으로 켜기` },
   ];
+  BENCH_CASES.forEach((c) => { c.title = c.titles[0]; });
   const QUESTION = {
     check: 'Check my block program for mistakes. Explain the most important problem first and which block to change.',
     error: 'My program stopped with the error shown below. Explain in simple words what it means and how to fix it.',
@@ -8537,7 +8552,7 @@ is_color_seen('red') / color_x('red') / color_size('red')
     const g = await Open.gpu();
     const chrome = await Chrome.state(lang);
     RB.open({
-      lang, cases: WeTutor.BENCH_CASES, systemPrompt: WeTutor.systemPrompt,
+      lang, cases: WeTutor.BENCH_CASES.map((c) => Object.assign({}, c, { title: c.titles[['ko', 'en', 'ja', 'zh', 'es'].indexOf(lang)] || c.title })), systemPrompt: WeTutor.systemPrompt,
       lib: () => Open.lib(), f16: !!(g && g.f16), installed: lastInst,
       chrome: chrome.ok && chrome.installed ? {
         ok: true, label: t('tt_chrome'),

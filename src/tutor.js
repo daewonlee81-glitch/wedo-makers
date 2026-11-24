@@ -243,11 +243,19 @@
         if (first || tokens.some(Boolean)) emit(b, depth, tokens);
       }
     };
-    ws.getTopBlocks(true).filter((b) => window.WEDO_HATS.includes(b.type) && b.isEnabled()).forEach((b) => walk(b, 0));
+    ws.getTopBlocks(true).filter((b) => window.WEDO_HATS.includes(b.type) && b.isEnabled()).forEach((hat) => {
+      const tokens = [];
+      for (const input of hat.inputList) {
+        for (const f of input.fieldRow) tokens.push(fieldText(f));
+        if (input.connection && input.connection.targetBlock()) tokens.push('(' + valueText(input.connection.targetBlock()) + ')');
+      }
+      emit(hat, 0, tokens);
+      walk(hat.getNextBlock(), 1); // 이벤트 아래 블록은 한 칸 들여쓰기
+    });
     return { lines, text: lines.map((l) => `[L${l.n}] ${'  '.repeat(l.depth)}${l.text}`).join('\n') };
   }
 
-  const LANG_NAME = { ko: 'Korean', en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', es: 'Spanish' };
+  const LANG_NAME = { ko: 'Korean', en: 'English', ja: 'Japanese', zh: 'Simplified Chinese', 'zh-CN': 'Simplified Chinese', 'zh-TW': 'Traditional Chinese', es: 'Spanish' };
   const FACTS = `Facts about this platform (trust these):
 - LEGO WeDo 2.0 hub, programmed with word blocks in "WeDo Makers". The listing shows each block as one line [Ln]. A program starts from an event block (Run clicked, hub button, keyboard key, distance, tilt, "when <condition>").
 - Motor ports are 1 and 2 (or all ports). Motor power is 0-100 %. Direction is clockwise / counterclockwise. "turn motor on" keeps spinning until "turn motor off" or Stop.
@@ -335,23 +343,25 @@ ${FACTS}`;
   };
 
   // 모델 비교 시험 예제 (일부러 틀린 곳 하나씩 · expect = 짚어야 할 줄)
+  // 실제 블록 글(blocksToText)과 같은 모양: 이벤트 블록 아래는 한 칸 들여쓰기
   const BENCH_CASES = [
-    { title: '가까이 오면 멈추기 — 비교 방향이 반대', expect: [2],
+    { titles: ['가까이 오면 멈추기 — 비교 방향이 반대', 'Stop when close — comparison reversed', '近づいたら止める — 比較の向きが逆', '靠近就停 — 比较方向反了', 'Parar al acercarse — comparación al revés'], expect: [3],
       question: 'The motor should stop when my hand comes close to the distance sensor, but it stops when my hand is far away. Check my block program.',
-      listing: `Hub: port 1: motor, port 2: distance sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 거리 센서 값이 > 20 이 될 때\n[L3]   포트 1 모터 끄기` },
-    { title: '모터가 멈추지 않음 — 끄기 블록이 없음', expect: [2, 3],
+      listing: `Hub: port 1: motor, port 2: distance sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3] 거리 센서 값이 > 20 이 될 때\n[L4]   포트 1 모터 끄기` },
+    { titles: ['모터가 멈추지 않음 — 끄기 블록이 없음', 'Motor never stops — no "off" block', 'モーターが止まらない — オフのブロックがない', '马达不停 — 没有关闭积木', 'El motor no para — falta «apagar»'], expect: [2, 3],
       question: 'My motor never stops. I wanted it to run for 3 seconds. Which block should I change?',
-      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 3 초 기다리기\n[L4] 허브 불빛을 빨강 으로 켜기` },
-    { title: '변수를 정하지 않음', expect: [4, 2],
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3]   3 초 기다리기\n[L4]   허브 불빛을 빨강 으로 켜기` },
+    { titles: ['변수를 정하지 않음', 'Variable never set', '変数を決めていない', '变量没有赋初值', 'La variable no tiene valor inicial'], expect: [5, 2],
       question: 'The motor does not get faster. Check my block program.',
-      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 켜기\n[L3] 무한 반복하기\n[L4]   포트 1 모터 파워를 (속도) % 로 정하기\n[L5]   속도 를 1 만큼 바꾸기\n\nNote: the variable "속도" is never set to a start value.` },
-    { title: '포트 착오 — 모터는 포트 2', expect: [2],
+      listing: `Hub: port 1: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터 켜기\n[L3]   무한 반복하기\n[L4]     속도 를 1 만큼 바꾸기\n[L5]     포트 1 모터 파워를 (속도) % 로 정하기\n\nNote: the variable "속도" is never set to a start value.` },
+    { titles: ['포트 착오 — 모터는 포트 2', 'Wrong port — the motor is on port 2', 'ポートのまちがい — モーターはポート2', '端口错误 — 马达在端口 2', 'Puerto equivocado: el motor está en el 2'], expect: [2],
       question: 'Nothing moves when I click Run. Why?',
-      listing: `Hub: port 1: distance sensor, port 2: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 포트 1 모터 2 초 동안 켜기\n[L3] 허브 불빛을 초록 으로 켜기` },
-    { title: '기울기 방향 착오', expect: [2],
+      listing: `Hub: port 1: distance sensor, port 2: motor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2]   포트 1 모터를 2 초 동안 켜기\n[L3]   허브 불빛을 초록 으로 켜기` },
+    { titles: ['기울기 방향 착오', 'Wrong tilt direction', '傾きの向きのまちがい', '倾斜方向错误', 'Dirección de inclinación equivocada'], expect: [1],
       question: 'The light should turn blue when I tilt the hub to the LEFT, but it happens when I tilt it right. Which block is wrong?',
-      listing: `Hub: port 1: tilt sensor\n\nBlock program:\n[L1] ▶ 실행 버튼을 누를 때\n[L2] 허브가 오른쪽 으로 기울어질 때\n[L3]   허브 불빛을 파랑 으로 켜기` },
+      listing: `Hub: port 1: tilt sensor\n\nBlock program:\n[L1] 허브가 오른쪽 으로 기울어질 때\n[L2]   허브 불빛을 파랑 으로 켜기` },
   ];
+  BENCH_CASES.forEach((c) => { c.title = c.titles[0]; });
   const QUESTION = {
     check: 'Check my block program for mistakes. Explain the most important problem first and which block to change.',
     error: 'My program stopped with the error shown below. Explain in simple words what it means and how to fix it.',
